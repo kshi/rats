@@ -82,16 +82,6 @@ public class Player implements pppp.sim.Player {
     public void init(int id, int side, long turns,
 		     Point[][] pipers, Point[] rats)
     {
-	for (int r=0; r<rats.length; r++) {
-	    rats[r].x += side/2;
-	    rats[r].y += side/2;
-	}
-	for (int i=0; i<4; i++) {
-	    for (int p=0; p<pipers[i].length; p++) {
-		pipers[i][p].x += side/2;
-		pipers[i][p].y += side/2;
-	    }
-	}
 	this.id = id;
 	this.side = side;
 	this.maxMusicStrength = (int)Math.log(4*pipers[id].length);
@@ -99,73 +89,40 @@ public class Player implements pppp.sim.Player {
 	
 	this.rewardField = new double[maxMusicStrength][side*stepsPerUnit][side*stepsPerUnit];
 	this.threatField = new double[maxMusicStrength][side*stepsPerUnit][side*stepsPerUnit];
-	updateBoard(pipers,rats);
-	for (int iter=0; iter<Math.sqrt(side); iter++) {
-	    diffuse();
-	}
+	/*updateBoard(pipers,rats);
+	  diffuse();*/
     }
 
     public void updateBoard(Point[][] pipers, Point[] rats) {	
 	for (int r=0; r<rats.length; r++) {
-	    if (rats[r] != null && rats[r].x > 1 && rats[r].y > 1 && rats[r].x < side-1 && rats[r].y < side-1) {
+	    if (rats[r] != null){// && rats[r].x > 1 && rats[r].y > 1 && rats[r].x < side-1 && rats[r].y < side-1) {
 		for (int d=0; d<maxMusicStrength; d++) {
-		    rewardField[d][(int) Math.round(rats[r].x*stepsPerUnit)][ (int) Math.round(rats[r].y*stepsPerUnit)] = ratAttractor;
+		    rewardField[d][(int) Math.round((rats[r].x+side/2)*stepsPerUnit)][ (int) Math.round((rats[r].y+side/2)*stepsPerUnit)] = ratAttractor;
 		}
 	    }
 	}
 	for (int t=0; t<4; t++) {
 	    for (int p=0; p<pipers[t].length; p++) {
-		if (pipers[t][p].x > 1 && pipers[t][p].x < side-1 && pipers[t][p].y > 1 && pipers[t][p].y < side-1) {
-		    int strength = getMusicStrength(pipers[t][p], pipers[t]);
-		    for (int d=0; d<strength; d++) {
-			if (t != id) {
-			    rewardField[d][(int) Math.round(pipers[t][p].x*stepsPerUnit)][ (int) Math.round(pipers[t][p].y*stepsPerUnit)] = enemyPiperRepulsor;
-			}
-			else {
-			    rewardField[d][(int) Math.round(pipers[t][p].x*stepsPerUnit)][ (int) Math.round(pipers[t][p].y*stepsPerUnit)] = friendlyPiperRepulsor;
-			}
+		//		if (pipers[t][p].x > 1 && pipers[t][p].x < side-1 && pipers[t][p].y > 1 && pipers[t][p].y < side-1) {
+		int strength = getMusicStrength(pipers[t][p], pipers[t]);
+		for (int d=0; d<strength; d++) {
+		    if (t != id) {
+			rewardField[d][(int) Math.round((pipers[t][p].x+side/2)*stepsPerUnit)][ (int) Math.round((pipers[t][p].y+side/2)*stepsPerUnit)] = enemyPiperRepulsor;
 		    }
-		}
+		    else {
+			rewardField[d][(int) Math.round((pipers[t][p].x+side/2)*stepsPerUnit)][ (int) Math.round((pipers[t][p].y+side/2)*stepsPerUnit)] = friendlyPiperRepulsor;
+		    }
+		}		
 	    }
 	}
 	diffuse();	
     }
-	/*pos = new Point [n_pipers][5];
-	random_pos = new Point [n_pipers];
-	pos_index = new int [n_pipers];
-		for (int p = 0 ; p != n_pipers ; ++p) {
-	    // spread out at the door level
-	    double door = 0.0;
-	    if (n_pipers != 1) door = p * 1.8 / (n_pipers - 1) - 0.9;
-	    // pick coordinate based on where the player is
-	    boolean neg_y = id == 2 || id == 3;
-	    boolean swap  = id == 1 || id == 3;
-	    // first and third position is at the door
-	    pos[p][0] = pos[p][2] = point(door, side * 0.5, neg_y, swap);
-	    // second position is chosen randomly in the rat moving area
-	    pos[p][1] = null;
-	    // fourth and fifth positions are outside the rat moving area
-	    pos[p][3] = point(door * -6, side * 0.5 + 3, neg_y, swap);
-	    pos[p][4] = point(door * +6, side * 0.5 + 3, neg_y, swap);
-	    // start with first position
-	    pos_index[p] = 0;
-	    }*/
 
     // return next locations on last argument
     public void play(Point[][] pipers, boolean[][] pipers_played,
 		     Point[] rats, Move[] moves)
     {
-	for (int r=0; r<rats.length; r++) {
-	    rats[r].x += side/2;
-	    rats[r].y += side/2;
-	}
-	for (int i=0; i<4; i++) {
-	    for (int p=0; p<pipers[i].length; p++) {
-		pipers[i][p].x += side/2;
-		pipers[i][p].y += side/2;
-	    }
-	}	
-	updateBoard(pipers,rats);
+	//updateBoard(pipers,rats);
 	for (int p = 0 ; p != pipers[id].length ; ++p) {
 	    Point src = pipers[id][p];
 	    int strength = Math.min(getMusicStrength(src, pipers[id]),maxMusicStrength-1);
@@ -184,31 +141,12 @@ public class Player implements pppp.sim.Player {
 		}		
 	    }
 	    if (steepestPotential > playThreshold) {
-		moves[p] = move(src, new Point(bestX / stepsPerUnit - side/2, bestY - side/2), true);
+		moves[p] = move(src, new Point(bestX / stepsPerUnit - side/2, bestY / stepsPerUnit - side/2), true);
 	    }
 	    else {
-		moves[p] = move(src, new Point(bestX / stepsPerUnit - side/2, bestY - side/2), false);
+		moves[p] = move(src, new Point(bestX / stepsPerUnit - side/2, bestY / stepsPerUnit - side/2), false);
 	    }
-	    /*Point dst = pos[p][pos_index[p]];
-	    // if null then get random position
-	    if (dst == null) dst = random_pos[p];
-	    // if position is reached
-	    if (Math.abs(src.x - dst.x) < 0.000001 &&
-		Math.abs(src.y - dst.y) < 0.000001) {
-		// discard random position
-		if (dst == random_pos[p]) random_pos[p] = null;
-		// get next position
-		if (++pos_index[p] == pos[p].length) pos_index[p] = 0;
-		dst = pos[p][pos_index[p]];
-		// generate a new position if random
-		if (dst == null) {
-		    double x = (gen.nextDouble() - 0.5) * side * 0.9;
-		    double y = (gen.nextDouble() - 0.5) * side * 0.9;
-		    random_pos[p] = dst = new Point(x, y);
-		}
-	    }
-	    // get move towards position
-	    moves[p] = move(src, dst, pos_index[p] > 1);*/
+	    
 	}
     }
 }
