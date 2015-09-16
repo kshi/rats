@@ -180,10 +180,20 @@ public class Player implements pppp.sim.Player {
 	updateBoard(pipers, rats, pipers_played);
 	for (int p = 0 ; p != pipers[id].length ; ++p) {
 	    Point src = pipers[id][p];
-        if(capturedRats(src, rats) >= 3) {
-            moves[p] = move(src, new Point(behindGateX, behindGateY), true);
+        // return back
+        int capturedRats = capturedRats(src, rats);
+        if(capturedRats >= 3) {
+            if(alphaX * pipers[id][p].x + alphaY * pipers[id][p].y >= side/2) {
+                moves[p] = move(src, new Point(behindGateX, behindGateY), true);
+            } else {
+                moves[p] = move(src, new Point(gateX, gateY), true);
+            }
         } else if (alphaX * pipers[id][p].x + alphaY * pipers[id][p].y > side/2) {
-		moves[p] = move(src, new Point(gateX, gateY), false);
+            if(capturedRats > 0) {
+                moves[p] = move(src, new Point(behindGateX, behindGateY), true);
+            } else {
+                moves[p] = move(src, new Point(gateX, gateY), false);
+            }
 	    }
         else {
 		int strength = Math.min(getMusicStrength(src, pipers[id]),maxMusicStrength-1);
@@ -216,11 +226,16 @@ public class Player implements pppp.sim.Player {
         int ratsCaptured = 0;
         for(Point rat: rats) {
             if(rat != null) {
-                if (src.distance(rat) < 10) {
+                if (distance(src, rat) < 10) {
                     ratsCaptured++;
                 }
             }
         }
         return ratsCaptured;
+    }
+
+    public double distance(Point p1, Point p2)
+    {
+        return Math.hypot(p1.x - p2.x, p1.y - p2.y);
     }
 }
