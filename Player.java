@@ -9,8 +9,8 @@ public class Player implements pppp.sim.Player {
 
     // see details below
     private int id = -1;
-    private int side = 0;    
-    private int stepsPerUnit = 10;
+    private int side = 0;
+    private int stepsPerUnit = 1;
     private int N;
     private int[] pos_index = null;
     private Point[][] pos = null;
@@ -20,6 +20,10 @@ public class Player implements pppp.sim.Player {
     private int maxMusicStrength;
     private double[][][] rewardField;
     private double[][][] threatField;  // case num pipers together, board x, board y
+    private double gateX;
+    private double gateY;
+    private int alphaX;
+    private int alphaY;
 
     // bunch of values to be learned later
     private final double ratAttractor = 10;
@@ -27,7 +31,7 @@ public class Player implements pppp.sim.Player {
     private final double friendlyPiperRepulsor = -1;
     private final double friendlyInDanger = 30;
     private final double D = 0.2;
-    private final double playThreshold = 8;
+    private final double playThreshold = 2;
 
     // create move towards specified destination
     private static Move move(Point src, Point dst, boolean play)
@@ -65,18 +69,18 @@ public class Player implements pppp.sim.Player {
     }
 
     private void diffuse() { 
-	double[][][] newRewardField = new double[maxMusicStrength][side*stepsPerUnit][side*stepsPerUnit];
-	double[][][] newThreatField = new double[maxMusicStrength][side*stepsPerUnit][side*stepsPerUnit];
+	double[][][] newRewardField = new double[maxMusicStrength][N][N];
+	//double[][][] newThreatField = new double[maxMusicStrength][side*stepsPerUnit][side*stepsPerUnit];
 	for (int x=1; x<side*stepsPerUnit-1; x++) {
 	    for (int y=1; y<side*stepsPerUnit-1; y++) {
 		for (int d=0; d<maxMusicStrength; d++) {
 		    newRewardField[d][x][y] += D * (rewardField[d][x-1][y] + rewardField[d][x][y-1] + rewardField[d][x+1][y] + rewardField[d][x][y+1]);
-		    newThreatField[d][x][y] += D * (threatField[d][x-1][y] + threatField[d][x][y-1] + threatField[d][x+1][y] + threatField[d][x][y+1]);
+		    //newThreatField[d][x][y] += D * (threatField[d][x-1][y] + threatField[d][x][y-1] + threatField[d][x+1][y] + threatField[d][x][y+1]);
 		}
 	    }
 	}
 	rewardField = newRewardField;
-	threatField = newThreatField;
+	//threatField = newThreatField;
     }
     
     public void init(int id, int side, long turns,
@@ -85,36 +89,72 @@ public class Player implements pppp.sim.Player {
 	this.id = id;
 	this.side = side;
 	this.maxMusicStrength = (int)Math.log(4*pipers[id].length);
-	N = side * stepsPerUnit;
+	N = (side+21) * stepsPerUnit;
+	switch(id) {
+	case 0:
+	    gateX = 0;
+	    gateY = side/2;
+	    alphaX = 0;
+	    alphaY = 1;
+	case 1:
+	    gateX = side/2;
+	    gateY = 0;
+	    alphaY = 0;
+	    alphaX = 1;
+	case 2:
+	    gateX = 0;
+	    gateY = -side/2;
+	    alphaX = 0;
+	    alphaY = -1;
+	case 3:
+	    gateX = -side/2;
+	    gateY = 0;
+	    alphaX = -1;
+	    alphaY = 0;
+	}
 	
-	this.rewardField = new double[maxMusicStrength][side*stepsPerUnit][side*stepsPerUnit];
-	this.threatField = new double[maxMusicStrength][side*stepsPerUnit][side*stepsPerUnit];
-	/*updateBoard(pipers,rats);
-	  diffuse();*/
+	this.rewardField = new double[maxMusicStrength][N][N];
+	//this.threatField = new double[maxMusicStrength][side*stepsPerUnit][side*stepsPerUnit];
+	updateBoard(pipers,rats,new boolean[N][N]);
+	for (int iter=0; iter<2*N; iter++) {
+	    diffuse();
+	}
     }
 
-    public void updateBoard(Point[][] pipers, Point[] rats) {	
+    private boolean isCaptured(Point loc, Point[] pipers, boolean[] playing) {
+	for (int p=0; p<pipers.length; p++) {
+	    if (playing[p] == true && Math.sqrt( (loc.x - pipers[p].x)*(loc.x-pipers[p].x) + (loc.y-pipers[p].y)*(loc.y-pipers[p].y)) < 10) {
+		return true;
+	    }
+	}
+	return false;
+    }
+
+    public void updateBoard(Point[][] pipers, Point[] rats, boolean[][] pipers_played) {	
 	for (int r=0; r<rats.length; r++) {
-	    if (rats[r] != null){// && rats[r].x > 1 && rats[r].y > 1 && rats[r].x < side-1 && rats[r].y < side-1) {
+	    if (rats[r] != null){
 		for (int d=0; d<maxMusicStrength; d++) {
-		    rewardField[d][(int) Math.round((rats[r].x+side/2)*stepsPerUnit)][ (int) Math.round((rats[r].y+side/2)*stepsPerUnit)] = ratAttractor;
+		    if (isCaptured(rats[r], pipers[id], pipers_played[id]) == false) {
+			rewardField[d][(int) Math.round((rats[r].x+side/2+10)*stepsPerUnit)][ (int) Math.round((rats[r].y+side/2+10)*stepsPerUnit)] = ratAttractor;
+		    }
 		}
 	    }
 	}
-	for (int t=0; t<4; t++) {
+	/*	for (int t=0; t<4; t++) {
 	    for (int p=0; p<pipers[t].length; p++) {
-		//		if (pipers[t][p].x > 1 && pipers[t][p].x < side-1 && pipers[t][p].y > 1 && pipers[t][p].y < side-1) {
-		int strength = getMusicStrength(pipers[t][p], pipers[t]);
-		for (int d=0; d<strength; d++) {
-		    if (t != id) {
-			rewardField[d][(int) Math.round((pipers[t][p].x+side/2)*stepsPerUnit)][ (int) Math.round((pipers[t][p].y+side/2)*stepsPerUnit)] = enemyPiperRepulsor;
+		if (pipers[t][p].x > -side/2 && pipers[t][p].x < side/2 && pipers[t][p].y > -side/2 && pipers[t][p].y < side/2) {
+		    int strength = getMusicStrength(pipers[t][p], pipers[t]);
+		    for (int d=0; d<strength; d++) {
+			if (t != id) {
+			    rewardField[d][(int) Math.round((pipers[t][p].x+side/2)*stepsPerUnit)][ (int) Math.round((pipers[t][p].y+side/2)*stepsPerUnit)] = enemyPiperRepulsor;
+			}
+			else {
+			    rewardField[d][(int) Math.round((pipers[t][p].x+side/2)*stepsPerUnit)][ (int) Math.round((pipers[t][p].y+side/2)*stepsPerUnit)] = friendlyPiperRepulsor;
+			}
 		    }
-		    else {
-			rewardField[d][(int) Math.round((pipers[t][p].x+side/2)*stepsPerUnit)][ (int) Math.round((pipers[t][p].y+side/2)*stepsPerUnit)] = friendlyPiperRepulsor;
-		    }
-		}		
+		}
 	    }
-	}
+	    }*/
 	diffuse();	
     }
 
@@ -122,31 +162,39 @@ public class Player implements pppp.sim.Player {
     public void play(Point[][] pipers, boolean[][] pipers_played,
 		     Point[] rats, Move[] moves)
     {
-	//updateBoard(pipers,rats);
+	updateBoard(pipers,rats, pipers_played);
 	for (int p = 0 ; p != pipers[id].length ; ++p) {
 	    Point src = pipers[id][p];
-	    int strength = Math.min(getMusicStrength(src, pipers[id]),maxMusicStrength-1);
-	    int x = (int)Math.round(src.x*stepsPerUnit);
-	    int y = (int)Math.round(src.y*stepsPerUnit);
-	    int bestX = 0;
-	    int bestY = 0;
-	    double steepestPotential = -1000;
-	    for (int i=Math.max(x-1,0); i<=Math.min(x+1,N-1); i++) {
-		for (int j=Math.max(y-1,0); j<=Math.min(y+1,N-1); j++){
-		    if (rewardField[strength][i][j] > steepestPotential) {
-			bestX = i;
-			bestY = j;
-			steepestPotential = rewardField[strength][i][j];
-		    }
-		}		
-	    }
-	    if (steepestPotential > playThreshold) {
-		moves[p] = move(src, new Point(bestX / stepsPerUnit - side/2, bestY / stepsPerUnit - side/2), true);
+	    if (alphaX * pipers[id][p].x + alphaY * pipers[id][p].y > side/2) {
+		moves[p] = move(src, new Point(gateX, gateY), false);
 	    }
 	    else {
-		moves[p] = move(src, new Point(bestX / stepsPerUnit - side/2, bestY / stepsPerUnit - side/2), false);
+		int strength = Math.min(getMusicStrength(src, pipers[id]),maxMusicStrength-1);
+		int x = (int)Math.round((src.x + side/2 + 10)*stepsPerUnit);
+		int y = (int)Math.round((src.y + side/2 + 10)*stepsPerUnit);
+		int bestX = -1;
+		int bestY = -1;
+		double steepestPotential = -1000;
+		for (int i=Math.max(x-1,0); i<=Math.min(x+1,N-1); i++) {
+		    for (int j=Math.max(y-1,0); j<=Math.min(y+1,N-1); j++){
+			if (rewardField[strength][i][j] > steepestPotential) {
+			    bestX = i;
+			    bestY = j;
+			    steepestPotential = rewardField[strength][i][j];
+			}
+		    }		
+		}
+
+		if (bestX == -1) {
+		    System.exit(0);
+		}
+		if (steepestPotential > playThreshold) {
+		    moves[p] = move(src, new Point(bestX / stepsPerUnit - side/2 - 10, bestY / stepsPerUnit - side/2 - 10), true);
+		}
+		else {
+		    moves[p] = move(src, new Point(bestX / stepsPerUnit - side/2 - 10, bestY / stepsPerUnit - side/2 - 10), false);
+		}
 	    }
-	    
 	}
     }
 }
