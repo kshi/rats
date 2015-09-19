@@ -31,7 +31,7 @@ public class Player implements pppp.sim.Player {
     // bunch of values to be learned later
     private final double ratAttractor = 20;
     private final double enemyPiperRepulsor = -10;
-    private final double friendlyPiperRepulsor = -5;
+    private final double friendlyPiperRepulsor = -1;
     private final double friendlyInDanger = 30;
     private final double D = 0.25;
     private final double playThreshold = 3;
