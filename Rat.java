@@ -14,6 +14,15 @@ public class Rat {
     public Point prevLocation;
     public Point curLocation;
 
+    public Rat(int id) {
+        this.id = id;
+        this.piperId = -1;
+        this.captured = false;
+        this.hasEnemyCaptured = false;
+        this.prevLocation = null;
+        this.curLocation = null;
+    }
+
     public Rat(int id, Point curLocation) {
         this.id = id;
         this.piperId = -1;

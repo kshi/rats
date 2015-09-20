@@ -36,4 +36,12 @@ public class Piper {
         this.prevLocation = this.curLocation;
         this.curLocation = point;
     }
+
+    public void resetRats() {
+        this.capturedRats = new HashSet<Integer>();
+    }
+
+    public void addRat(Integer ratId) {
+        this.capturedRats.add(ratId);
+    }
 }

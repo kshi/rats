@@ -37,6 +37,9 @@ public class Player implements pppp.sim.Player {
     private final double playThreshold = 3;
     private final double closeToGate = 8;
 
+    private Map<Integer, Rat> rats;
+    private Map<Integer, Piper> pipers;
+
     // create move towards specified destination
     private static Move move(Point src, Point dst, boolean play)
     {
@@ -136,11 +139,100 @@ public class Player implements pppp.sim.Player {
 	}
 	
 	this.rewardField = new double[maxMusicStrength][N][N];
+        this.rats = new HashMap<Integer, Rat>();
+        this.pipers = new HashMap<Integer, Piper>();
 	//this.threatField = new double[maxMusicStrength][side*stepsPerUnit][side*stepsPerUnit];
 	updateBoard(pipers,rats,new boolean[N][N]);
+    createPipers(pipers);
+    updatePipersAndRats(rats, pipers, new boolean[4][pipers[0].length]);
 	for (int iter=0; iter<2*N; iter++) {
 	    diffuse();
 	}
+    }
+
+    private void createPipers(Point[][] pipers) {
+        for(int i = 0; i < pipers[this.id].length; i++) {
+            this.pipers.put(i, new Piper(i, pipers[this.id][i]));
+        }
+    }
+
+    private void updatePipersAndRats(Point[] rats, Point[][] pipers, boolean[][] pipers_played) {
+        for(Piper piper: this.pipers.values()) {
+            piper.resetRats();
+        }
+        for(int i =0; i < rats.length; i++) {
+            if(rats[i] == null) {
+                if(this.rats.containsKey(i)) {
+                    this.rats.remove(i);
+                }
+            } else {
+                if(!this.rats.containsKey(i)) {
+                    Rat rat = new Rat(i);
+                    this.rats.put(i, rat);
+                }
+                Rat rat = this.rats.get(i);
+                updateRat(rat, rats[i], pipers, pipers_played);
+            }
+        }
+    }
+
+    private void updateRat(Rat rat, Point location, Point[][] pipers, boolean[][] pipers_played) {
+        rat.updateLocation(location);
+        int maxPipersNearbySingleTeam = 0;
+        int ratCapturedTeamId = -1;
+        int piperId = -1;
+        boolean conflict = false;
+        int pipersNearby[] = new int[4];
+        for(int i =0; i < pipers.length; i++) {
+            pipersNearby[i] = 0;
+            for(int j = 0; j < pipers[i].length; j++) {
+                if(distance(pipers[i][j], location) < 10) {
+                    if(i == this.id) {
+                        if(this.pipers.get(j).playedMusic) {
+                            piperId = j;
+                            pipersNearby[i]++;
+                        }
+                    } else {
+                        if(pipers_played[i][j]) {
+                            pipersNearby[i]++;
+                        }
+                    }
+                }
+            }
+            if(pipersNearby[i] > maxPipersNearbySingleTeam) {
+                maxPipersNearbySingleTeam = pipersNearby[i];
+                ratCapturedTeamId = i;
+            }
+        }
+        Arrays.sort(pipersNearby);
+        if(pipersNearby[0] == pipersNearby[1]) {
+            conflict = true;
+        }
+        if((ratCapturedTeamId == -1) || conflict) {
+            rat.captured = false;
+            rat.hasEnemyCaptured = false;
+            rat.piperId = -1;
+        } else if(ratCapturedTeamId != this.id){
+            rat.captured = true;
+            rat.hasEnemyCaptured = true;
+        } else {
+            if(rat.captured && !rat.hasEnemyCaptured) {
+                Piper prevPiper = this.pipers.get(rat.piperId);
+                if(prevPiper.playedMusic &&
+                        (distance(prevPiper.curLocation, location) < 10)
+                ) {
+                    prevPiper.addRat(rat.id);
+                } else {
+                    rat.piperId = piperId;
+                    this.pipers.get(piperId).addRat(rat.id);
+                }
+            } else {
+                rat.piperId = piperId;
+                this.pipers.get(piperId).addRat(rat.id);
+            }
+            rat.captured = true;
+            rat.hasEnemyCaptured = false;
+        }
     }
 
     private boolean isCaptured(Point loc, Point[] pipers, boolean[] playing) {
@@ -188,6 +280,7 @@ public class Player implements pppp.sim.Player {
     public void play(Point[][] pipers, boolean[][] pipers_played,
 		     Point[] rats, Move[] moves)
     {
+        updatePipersAndRats(rats, pipers, pipers_played);
 	boolean haveGateInfluence = false;
 	int ratsRemaining = 0;
 	for (int r=0; r<rats.length; r++) {
