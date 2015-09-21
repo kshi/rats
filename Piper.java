@@ -40,7 +40,7 @@ public class Piper {
 
     public void updateLocation(Point point) {
 	if (this.prevLocation != null) {
-	    double memory = 20;
+	    double memory = 4;
 	    absMovement = absMovement * (memory - 1) / memory;
 	    absMovement += Math.hypot(point.x - this.prevLocation.x, point.y - this.prevLocation.y) / memory;
 	}

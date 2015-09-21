@@ -31,7 +31,7 @@ public class Player implements pppp.sim.Player {
     // bunch of values to be learned later
     private final double ratAttractor = 30;
     private final double enemyPiperRepulsor = -100;
-    private final double friendlyPiperRepulsor = -10;
+    private final double friendlyPiperRepulsor = -1;
     private final double friendlyInDanger = 30;
     private final double D = 0.25;
     private final double playThreshold = 3;
@@ -257,6 +257,9 @@ public class Player implements pppp.sim.Player {
 		}
 	    }
 	}
+	for (int d=0; d<maxMusicStrength; d++) {
+	    rewardField[d][(int) (behindGateX + side/2 + 10) * stepsPerUnit][(int) (behindGateY * stepsPerUnit + side/2 + 10) * stepsPerUnit] = -100;
+	}
 	for (int t=0; t<4; t++) {
 	    for (int p=0; p<pipers[t].length; p++) {
 		if (pipers[t][p].x > -side/2 && pipers[t][p].x < side/2 && pipers[t][p].y > -side/2 && pipers[t][p].y < side/2) {
@@ -293,7 +296,7 @@ public class Player implements pppp.sim.Player {
 	for (int p = 0 ; p != pipers[id].length ; ++p) {
 	    Point src = pipers[id][p];
 	    // return back
-	    int numCapturedRats = capturedRats(src, rats);
+	    int numCapturedRats = nearbyRats(src, rats);
 	    //int numCapturedRats = this.pipers.get(p).getNumCapturedRats();
 	    boolean playMusic = false;
 	    Point target;
@@ -311,7 +314,7 @@ public class Player implements pppp.sim.Player {
 	    }
 
 	    //piper has captured enough rats
-	    else if(numCapturedRats >= 1+ratsRemaining / (8*pipers[id].length) && ((distance(src, new Point(gateX, gateY)) > closeToGate) || haveGateInfluence == false) ) {
+	    else if(numCapturedRats >= 1 + ratsRemaining / (8*pipers[id].length) && ((distance(src, new Point(gateX, gateY)) > closeToGate) || haveGateInfluence == false) ) {
 		if (distance(src, new Point(gateX, gateY)) > closeToGate) {
 		    target = new Point(behindGateX, behindGateY);
 		    playMusic = true;
@@ -360,7 +363,7 @@ public class Player implements pppp.sim.Player {
 		    }
 		    else {
 			// if not already playing, play music when approaching local optima
-			if (this.pipers.get(p).getAbsMovement() < 0.6) {
+			if (this.pipers.get(p).getAbsMovement() < 0.6 && nearbyRats(src, rats) > 0) {
 			    playMusic = true;
 			}
 			else {
@@ -375,16 +378,16 @@ public class Player implements pppp.sim.Player {
 	}
     }
     
-    private int capturedRats(Point src, Point[] rats) {
-        int ratsCaptured = 0;
+    private int nearbyRats(Point src, Point[] rats) {
+        int ratsNearby = 0;
         for(Point rat: rats) {
             if(rat != null) {
                 if (distance(src, rat) < 4) {
-                    ratsCaptured++;
+                    ratsNearby++;
                 }
             }
         }
-        return ratsCaptured;
+        return ratsNearby;
     }
 
     public double distance(Point p1, Point p2)
