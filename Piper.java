@@ -16,6 +16,7 @@ public class Piper {
     public Point curLocation;
     public boolean playedMusic;
     public double absMovement;
+    public Strategy strategy;
 
     public Piper(int id, Point curLocation) {
         this.id = id;
@@ -23,7 +24,18 @@ public class Piper {
         this.prevLocation = null;
         this.curLocation = curLocation;
         this.playedMusic = false;
-	this.absMovement = 0;
+	    this.absMovement = 0;
+        this.strategy = new Strategy();
+    }
+
+    public Piper(int id, Point curLocation, Strategy strategy) {
+        this.id = id;
+        this.capturedRats = new HashSet<Integer>();
+        this.prevLocation = null;
+        this.curLocation = curLocation;
+        this.playedMusic = false;
+        this.absMovement = 0;
+        this.strategy = strategy;
     }
 
     public Piper(int id, Point curLocation, boolean playedMusic) {
@@ -32,6 +44,8 @@ public class Piper {
         this.prevLocation = null;
         this.curLocation = curLocation;
         this.playedMusic = playedMusic;
+        this.absMovement = 0;
+        this.strategy = new Strategy();
     }
 
     public void updateMusic(boolean playMusic) {

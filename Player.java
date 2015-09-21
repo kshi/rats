@@ -143,16 +143,22 @@ public class Player implements pppp.sim.Player {
         this.pipers = new HashMap<Integer, Piper>();
 	//this.threatField = new double[maxMusicStrength][side*stepsPerUnit][side*stepsPerUnit];
 	updateBoard(pipers,rats,new boolean[N][N]);
-	createPipers(pipers);
+	createPipers(pipers, rats);
 	updatePipersAndRats(rats, pipers, new boolean[4][pipers[0].length]);
 	for (int iter=0; iter<2*N; iter++) {
 	    diffuse();
 	}
     }
 
-    private void createPipers(Point[][] pipers) {
+    private void createPipers(Point[][] pipers, Point[] rats) {
         for(int i = 0; i < pipers[this.id].length; i++) {
-            this.pipers.put(i, new Piper(i, pipers[this.id][i]));
+            Strategy strategy;
+            if(rats.length > 15) {
+                strategy = new Strategy(StrategyType.sweep);
+            } else {
+                strategy = new Strategy(StrategyType.none);
+            }
+            this.pipers.put(i, new Piper(i, pipers[this.id][i], strategy));
         }
     }
 
@@ -294,6 +300,11 @@ public class Player implements pppp.sim.Player {
 	}
 	updateBoard(pipers, rats, pipers_played);
 	for (int p = 0 ; p != pipers[id].length ; ++p) {
+        Piper piper = this.pipers.get(p);
+        if(piper.strategy.type == StrategyType.sweep) {
+            moves[p] = modifiedSweep(piper);
+            continue;
+        }
 	    Point src = pipers[id][p];
 	    // return back
 	    int numCapturedRats = nearbyRats(src, rats);
@@ -376,6 +387,113 @@ public class Player implements pppp.sim.Player {
 	    this.pipers.get(p).updateMusic(playMusic);
 	    moves[p] = move(src, target, playMusic);
 	}
+        for(int i = 0; i < moves.length; i++) {
+            this.pipers.get(i).playedMusic = moves[i].play;
+        }
+    }
+
+    private Move modifiedSweep(Piper piper) {
+        boolean playMusic = false;
+        Point target = null;
+        if(piper.strategy.type != StrategyType.sweep || !piper.strategy.isPropertySet("step")) {
+            piper.strategy = new Strategy(StrategyType.sweep);
+            piper.strategy.setProperty("step", 1);
+            target = new Point(gateX, gateY);
+            playMusic = false;
+        } else if(distance(piper.curLocation, (Point) piper.strategy.getProperty("location")) != 0) {
+            target = (Point) piper.strategy.getProperty("location");
+            playMusic = piper.playedMusic;
+        } else {
+            Integer step = (Integer) piper.strategy.getProperty("step");
+            switch (step) {
+                case 1:
+                    int p1 = (side/2) - 7; //43
+                    int p2 = (side/2)/5 + 7;  //17
+                    switch (this.id) {
+                        case 0:
+                            switch (piper.id) {
+                                case 0:
+                                    target = new Point(-p1, p1);
+                                    break;
+                                case 1:
+                                    target = new Point(-p1, p2);
+                                    break;
+                                case 2:
+                                    target = new Point(p1, p2);
+                                    break;
+                                case 3:
+                                    target = new Point(p1, p1);
+                                    break;
+                            }
+                            break;
+                        case 1:
+                            switch (piper.id) {
+                                case 0:
+                                    target = new Point(p1, -p1);
+                                    break;
+                                case 1:
+                                    target = new Point(p2, -p1);
+                                    break;
+                                case 2:
+                                    target = new Point(p2, p1);
+                                    break;
+                                case 3:
+                                    target = new Point(p1, p1);
+                                    break;
+                            }
+                            break;
+                        case 2:
+                            switch (piper.id) {
+                                case 0:
+                                    target = new Point(-p1, -p1);
+                                    break;
+                                case 1:
+                                    target = new Point(-p1, -p2);
+                                    break;
+                                case 2:
+                                    target = new Point(p1, -p2);
+                                    break;
+                                case 3:
+                                    target = new Point(p1, -p1);
+                                    break;
+                            }
+                            break;
+                        case 3:
+                            switch (piper.id) {
+                                case 0:
+                                    target = new Point(-p1, p1);
+                                    break;
+                                case 1:
+                                    target = new Point(-p2, p1);
+                                    break;
+                                case 2:
+                                    target = new Point(-p2, -p1);
+                                    break;
+                                case 3:
+                                    target = new Point(-p1, -p1);
+                                    break;
+                            }
+                            break;
+                    }
+                    piper.strategy.setProperty("step", 2);
+                    break;
+                case 2:
+                    playMusic = true;
+                    piper.strategy.setProperty("step", 3);
+                    target = new Point(alphaX * side/4, alphaY * side/4);
+                    break;
+                case 3:
+                    playMusic = true;
+                    piper.strategy.setProperty("step", 4);
+                    target = new Point(alphaX * (side/2 - 5), alphaY * (side/2 - 5));
+                    break;
+                case 4:
+                    piper.strategy = new Strategy(StrategyType.none);
+                    target = new Point(gateX, gateY);
+            }
+        }
+        piper.strategy.setProperty("location", target);
+        return move(piper.curLocation, target, playMusic);
     }
     
     private int nearbyRats(Point src, Point[] rats) {
