@@ -15,6 +15,7 @@ public class Piper {
     public Point prevLocation;
     public Point curLocation;
     public boolean playedMusic;
+    public double absMovement;
 
     public Piper(int id, Point curLocation) {
         this.id = id;
@@ -22,6 +23,7 @@ public class Piper {
         this.prevLocation = null;
         this.curLocation = curLocation;
         this.playedMusic = false;
+	this.absMovement = 0;
     }
 
     public Piper(int id, Point curLocation, boolean playedMusic) {
@@ -32,7 +34,16 @@ public class Piper {
         this.playedMusic = playedMusic;
     }
 
+    public void updateMusic(boolean playMusic) {
+	this.playedMusic = playMusic;
+    }
+
     public void updateLocation(Point point) {
+	if (this.prevLocation != null) {
+	    double memory = 20;
+	    absMovement = absMovement * (memory - 1) / memory;
+	    absMovement += Math.hypot(point.x - this.prevLocation.x, point.y - this.prevLocation.y) / memory;
+	}
         this.prevLocation = this.curLocation;
         this.curLocation = point;
     }
@@ -43,5 +54,13 @@ public class Piper {
 
     public void addRat(Integer ratId) {
         this.capturedRats.add(ratId);
+    }
+
+    public int getNumCapturedRats() {
+	return capturedRats.size();
+    }
+
+    public double getAbsMovement() {
+	return absMovement;
     }
 }

@@ -29,13 +29,13 @@ public class Player implements pppp.sim.Player {
     private Random perturber;
 
     // bunch of values to be learned later
-    private final double ratAttractor = 20;
-    private final double enemyPiperRepulsor = -10;
-    private final double friendlyPiperRepulsor = -1;
+    private final double ratAttractor = 30;
+    private final double enemyPiperRepulsor = -100;
+    private final double friendlyPiperRepulsor = -10;
     private final double friendlyInDanger = 30;
     private final double D = 0.25;
     private final double playThreshold = 3;
-    private final double closeToGate = 8;
+    private final double closeToGate = 9;
 
     private Map<Integer, Rat> rats;
     private Map<Integer, Piper> pipers;
@@ -50,7 +50,7 @@ public class Player implements pppp.sim.Player {
 	if (length > limit) {
 	    dx = (dx * limit) / length;
 	    dy = (dy * limit) / length;
-	}
+	}	
 	return new Move(dx, dy, play);
     }
 
@@ -143,8 +143,8 @@ public class Player implements pppp.sim.Player {
         this.pipers = new HashMap<Integer, Piper>();
 	//this.threatField = new double[maxMusicStrength][side*stepsPerUnit][side*stepsPerUnit];
 	updateBoard(pipers,rats,new boolean[N][N]);
-    createPipers(pipers);
-    updatePipersAndRats(rats, pipers, new boolean[4][pipers[0].length]);
+	createPipers(pipers);
+	updatePipersAndRats(rats, pipers, new boolean[4][pipers[0].length]);
 	for (int iter=0; iter<2*N; iter++) {
 	    diffuse();
 	}
@@ -157,8 +157,9 @@ public class Player implements pppp.sim.Player {
     }
 
     private void updatePipersAndRats(Point[] rats, Point[][] pipers, boolean[][] pipers_played) {
-        for(Piper piper: this.pipers.values()) {
-            piper.resetRats();
+	for (int p=0; p<pipers[id].length; p++) {
+            this.pipers.get(p).resetRats();
+	    this.pipers.get(p).updateLocation(pipers[id][p]);
         }
         for(int i =0; i < rats.length; i++) {
             if(rats[i] == null) {
@@ -293,8 +294,11 @@ public class Player implements pppp.sim.Player {
 	    Point src = pipers[id][p];
 	    // return back
 	    int numCapturedRats = capturedRats(src, rats);
+	    //int numCapturedRats = this.pipers.get(p).getNumCapturedRats();
 	    boolean playMusic = false;
 	    Point target;
+
+	    //piper is behind gate
 	    if (alphaX * pipers[id][p].x + alphaY * pipers[id][p].y > side/2) {
 		if (numCapturedRats > 0 && haveGateInfluence == false) {
 		    target = new Point(behindGateX, behindGateY);
@@ -304,7 +308,10 @@ public class Player implements pppp.sim.Player {
 		    target = new Point(gateX, gateY);
 		    playMusic = false;
 		}
-	    } else if(numCapturedRats >= 1+ratsRemaining / (8*pipers[id].length) && ((distance(src, new Point(gateX, gateY)) > closeToGate) || haveGateInfluence == false) ) {
+	    }
+
+	    //piper has captured enough rats
+	    else if(numCapturedRats >= 1+ratsRemaining / (8*pipers[id].length) && ((distance(src, new Point(gateX, gateY)) > closeToGate) || haveGateInfluence == false) ) {
 		if (distance(src, new Point(gateX, gateY)) > closeToGate) {
 		    target = new Point(behindGateX, behindGateY);
 		    playMusic = true;
@@ -313,7 +320,10 @@ public class Player implements pppp.sim.Player {
 		    target = new Point(behindGateX, behindGateY);
 		    playMusic = true;
 		}
-	    } else {
+	    }
+
+	    //piper should capture more rats
+	    else {
 		int strength = Math.min(getMusicStrength(src, pipers[id]),maxMusicStrength-1);
 		int x = (int)Math.round((src.x + side/2 + 10)*stepsPerUnit);
 		int y = (int)Math.round((src.y + side/2 + 10)*stepsPerUnit);
@@ -329,19 +339,38 @@ public class Player implements pppp.sim.Player {
 			}
 		    }
 		}
-		target = new Point(bestX / stepsPerUnit - side/2 - 10 + (perturber.nextFloat() - 0.5), bestY / stepsPerUnit - side/2 - 10 + (perturber.nextFloat() - 0.5));
+		target = new Point(bestX / stepsPerUnit - side/2 - 10 + (perturber.nextFloat() - 0.5) / 10, bestY / stepsPerUnit - side/2 - 10 + (perturber.nextFloat() - 0.5) / 10);
+		//don't play music near gate if a piper is behind the gate trying to pull rats in
 		if (distance(src, new Point(gateX, gateY)) < closeToGate) {
 		    if (haveGateInfluence == true) {
 			playMusic = false;
 		    }
-		    else {
-			playMusic = true;
-		    }
 		}
 		else {
-		    playMusic = true;
+		    // if already playing music, keep playing unless lost all rats
+		    if (this.pipers.get(p).playedMusic == true) {
+			/*			if (numCapturedRats > 0) {			    
+			    playMusic = true;
+			}
+			else {
+			    System.out.println("lost rats");
+			    playMusic = false;
+			    }*/
+			playMusic = true;
+		    }
+		    else {
+			// if not already playing, play music when approaching local optima
+			if (this.pipers.get(p).getAbsMovement() < 0.6) {
+			    playMusic = true;
+			}
+			else {
+			    playMusic = false;
+			}
+		    }
 		}
 	    }
+	    //	    System.out.println(this.pipers.get(p).getAbsMovement());
+	    this.pipers.get(p).updateMusic(playMusic);
 	    moves[p] = move(src, target, playMusic);
 	}
     }
