@@ -29,7 +29,7 @@ public class Player implements pppp.sim.Player {
     private Random perturber;
 
     // bunch of values to be learned later
-    private final double ratAttractor = 30;
+    private final double ratAttractor = 40;
     private final double enemyPiperRepulsor = -100;
     private final double friendlyPiperRepulsor = -1;
     private final double friendlyInDanger = 30;
@@ -145,7 +145,7 @@ public class Player implements pppp.sim.Player {
 	updateBoard(pipers,rats,new boolean[N][N]);
 	createPipers(pipers, rats);
 	updatePipersAndRats(rats, pipers, new boolean[4][pipers[0].length]);
-	for (int iter=0; iter<2*N; iter++) {
+	for (int iter=0; iter<N; iter++) {
 	    diffuse();
 	}
     }
@@ -374,7 +374,7 @@ public class Player implements pppp.sim.Player {
 		    }
 		    else {
 			// if not already playing, play music when approaching local optima
-			if (this.pipers.get(p).getAbsMovement() < 0.6 && nearbyRats(src, rats) > 0) {
+			if (this.pipers.get(p).getAbsMovement() < 0.65 && nearbyRats(src, rats) > 0) {
 			    playMusic = true;
 			}
 			else {
