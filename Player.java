@@ -16,6 +16,8 @@ public class Player implements pppp.sim.Player {
     private Point[][] pos = null;
     private Point[] random_pos = null;
     private Random gen = new Random();
+    boolean neg_y;
+    boolean swap;
 
     private int maxMusicStrength;
     private double[][][] rewardField;
@@ -52,7 +54,7 @@ public class Player implements pppp.sim.Player {
 	if (length > limit) {
 	    dx = (dx * limit) / length;
 	    dy = (dy * limit) / length;
-	}	
+	}
 	return new Move(dx, dy, play);
     }
 
@@ -99,6 +101,8 @@ public class Player implements pppp.sim.Player {
     public void init(int id, int side, long turns,
 		     Point[][] pipers, Point[] rats)
     {
+        this.neg_y = id == 2 || id == 3;
+        this.swap  = id == 1 || id == 3;
 	this.id = id;
 	this.side = side;
 	this.maxMusicStrength = (int)Math.log(4*pipers[id].length);
@@ -301,12 +305,12 @@ public class Player implements pppp.sim.Player {
 	for (int p = 0 ; p != pipers[id].length ; ++p) {
         Piper piper = this.pipers.get(p);
         if(piper.strategy.type == StrategyType.sweep) {
-            moves[p] = modifiedSweep(piper);
+            moves[p] = modifiedSweep(piper, rats);
             continue;
         }
 	    Point src = pipers[id][p];
 	    // return back
-	    int numCapturedRats = nearbyRats(src, rats);
+	    int numCapturedRats = nearbyRats(src, rats, null);
 	    //int numCapturedRats = this.pipers.get(p).getNumCapturedRats();
 	    boolean playMusic = false;
 	    Point target;
@@ -372,7 +376,7 @@ public class Player implements pppp.sim.Player {
 		    }
 		    else {
 			// if not already playing, play music when approaching local optima			
-			if (this.pipers.get(p).getAbsMovement() < 0.3 && nearbyRats(src, rats) > 0) {
+			if (this.pipers.get(p).getAbsMovement() < 0.3 && nearbyRats(src, rats, null) > 0) {
 			    playMusic = true;
 			}
 			else {
@@ -390,7 +394,7 @@ public class Player implements pppp.sim.Player {
         }
     }
 
-    private Move modifiedSweep(Piper piper) {
+    private Move modifiedSweep(Piper piper, Point[] rats) {
         boolean playMusic = false;
         Point target = null;
         if(piper.strategy.type != StrategyType.sweep || !piper.strategy.isPropertySet("step")) {
@@ -407,77 +411,25 @@ public class Player implements pppp.sim.Player {
                 case 1:
                     int p1 = (side/2) - 7; //43
                     int p2 = (side/2)/5 + 7;  //17
-                    switch (this.id) {
+                    switch (piper.id) {
                         case 0:
-                            switch (piper.id) {
-                                case 0:
-                                    target = new Point(-p1, p1);
-                                    break;
-                                case 1:
-                                    target = new Point(-p1, p2);
-                                    break;
-                                case 2:
-                                    target = new Point(p1, p2);
-                                    break;
-                                case 3:
-                                    target = new Point(p1, p1);
-                                    break;
-                            }
+                            target = point(-p1, p1, this.neg_y, this.swap);
                             break;
                         case 1:
-                            switch (piper.id) {
-                                case 0:
-                                    target = new Point(p1, -p1);
-                                    break;
-                                case 1:
-                                    target = new Point(p2, -p1);
-                                    break;
-                                case 2:
-                                    target = new Point(p2, p1);
-                                    break;
-                                case 3:
-                                    target = new Point(p1, p1);
-                                    break;
-                            }
+                            target = point(-p1, p2, this.neg_y, this.swap);
                             break;
                         case 2:
-                            switch (piper.id) {
-                                case 0:
-                                    target = new Point(-p1, -p1);
-                                    break;
-                                case 1:
-                                    target = new Point(-p1, -p2);
-                                    break;
-                                case 2:
-                                    target = new Point(p1, -p2);
-                                    break;
-                                case 3:
-                                    target = new Point(p1, -p1);
-                                    break;
-                            }
+                            target = point(p1, p2, this.neg_y, this.swap);
                             break;
                         case 3:
-                            switch (piper.id) {
-                                case 0:
-                                    target = new Point(-p1, p1);
-                                    break;
-                                case 1:
-                                    target = new Point(-p2, p1);
-                                    break;
-                                case 2:
-                                    target = new Point(-p2, -p1);
-                                    break;
-                                case 3:
-                                    target = new Point(-p1, -p1);
-                                    break;
-                            }
+                            target = point(p1, p1, this.neg_y, this.swap);
                             break;
                     }
                     piper.strategy.setProperty("step", 2);
                     break;
                 case 2:
                     playMusic = true;
-                    piper.strategy.setProperty("step", 3);
+                    piper.strategy.setProperty("step", 4);
                     target = new Point(alphaX * side/4, alphaY * side/4);
                     break;
                 case 3:
@@ -486,19 +438,32 @@ public class Player implements pppp.sim.Player {
                     target = new Point(alphaX * (side/2 - 5), alphaY * (side/2 - 5));
                     break;
                 case 4:
-                    piper.strategy = new Strategy(StrategyType.none);
-                    target = new Point(gateX, gateY);
+                    playMusic = true;
+                    piper.strategy.setProperty("step", 5);
+                    target = new Point(behindGateX, behindGateY);
+                    break;
+                case 5:
+                    if(nearbyRats(piper.curLocation, rats, 10) == 0) {
+                        piper.strategy = new Strategy(StrategyType.none);
+                    }
+                    playMusic = true;
+                    target = new Point(behindGateX, behindGateY);
             }
         }
         piper.strategy.setProperty("location", target);
         return move(piper.curLocation, target, playMusic);
     }
-    
-    private int nearbyRats(Point src, Point[] rats) {
+
+    // pass distanceThreshold as null to use a default threshold value
+    private int nearbyRats(Point src, Point[] rats, Integer distanceThreshold) {
         int ratsNearby = 0;
+        int threshold = 4;
+        if(distanceThreshold != null) {
+            threshold = distanceThreshold;
+        }
         for(Point rat: rats) {
             if(rat != null) {
-                if (distance(src, rat) < 4) {
+                if (distance(src, rat) < threshold) {
                     ratsNearby++;
                 }
             }
