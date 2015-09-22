@@ -29,9 +29,11 @@ public class Player implements pppp.sim.Player {
     private Random perturber;
 
     // bunch of values to be learned later
-    private final double ratAttractor = 40;
+    private final double baseRatAttractor = 40;
+    private int totalRats;
+    private double ratAttractor = baseRatAttractor;
     private final double enemyPiperRepulsor = -100;
-    private final double friendlyPiperRepulsor = -1;
+    private final double friendlyPiperRepulsor = -5;
     private final double friendlyInDanger = 30;
     private final double D = 0.25;
     private final double playThreshold = 3;
@@ -72,7 +74,7 @@ public class Player implements pppp.sim.Player {
 		strength += 1;
 	    }
 	}
-	return strength;
+	return strength-1;
     }
 
     private void refreshBoard() {
@@ -100,7 +102,8 @@ public class Player implements pppp.sim.Player {
 	this.id = id;
 	this.side = side;
 	this.maxMusicStrength = (int)Math.log(4*pipers[id].length);
-	N = (side+21) * stepsPerUnit;
+	this.totalRats = rats.length;
+	N = (side+20) * stepsPerUnit + 1;
 	perturber = new Random();
 	double delta = 2.1;
 	switch(id) {	   
@@ -263,9 +266,9 @@ public class Player implements pppp.sim.Player {
 		}
 	    }
 	}
-	for (int d=0; d<maxMusicStrength; d++) {
+	/*	for (int d=0; d<maxMusicStrength; d++) {
 	    rewardField[d][(int) (behindGateX + side/2 + 10) * stepsPerUnit][(int) (behindGateY * stepsPerUnit + side/2 + 10) * stepsPerUnit] = -100;
-	}
+	    }*/
 	for (int t=0; t<4; t++) {
 	    for (int p=0; p<pipers[t].length; p++) {
 		if (pipers[t][p].x > -side/2 && pipers[t][p].x < side/2 && pipers[t][p].y > -side/2 && pipers[t][p].y < side/2) {
@@ -292,12 +295,8 @@ public class Player implements pppp.sim.Player {
     {
         updatePipersAndRats(rats, pipers, pipers_played);
 	boolean haveGateInfluence = false;
-	int ratsRemaining = 0;
-	for (int r=0; r<rats.length; r++) {
-	    if (rats[r] != null) {
-		ratsRemaining++;
-	    }
-	}
+	ratAttractor = baseRatAttractor * ((double) totalRats / (double) rats.length);
+	//	System.out.println(ratAttractor);
 	updateBoard(pipers, rats, pipers_played);
 	for (int p = 0 ; p != pipers[id].length ; ++p) {
         Piper piper = this.pipers.get(p);
@@ -325,7 +324,7 @@ public class Player implements pppp.sim.Player {
 	    }
 
 	    //piper has captured enough rats
-	    else if(numCapturedRats >= 1 + ratsRemaining / (8*pipers[id].length) && ((distance(src, new Point(gateX, gateY)) > closeToGate) || haveGateInfluence == false) ) {
+	    else if(numCapturedRats >= 1 + rats.length / (8*pipers[id].length) && ((distance(src, new Point(gateX, gateY)) > closeToGate) || haveGateInfluence == false) ) {
 		if (distance(src, new Point(gateX, gateY)) > closeToGate) {
 		    target = new Point(behindGateX, behindGateY);
 		    playMusic = true;
@@ -344,8 +343,8 @@ public class Player implements pppp.sim.Player {
 		int bestX = -1;
 		int bestY = -1;
 		double steepestPotential = -1000;
-		for (int i=Math.max(x-1,0); i<=Math.min(x+1,N-1); i++) {
-		    for (int j=Math.max(y-1,0); j<=Math.min(y+1,N-1); j++){
+		for (int i=Math.max(x-3,0); i<=Math.min(x+3,N-1); i++) {
+		    for (int j=Math.max(y-3,0); j<=Math.min(y+3,N-1); j++){
 			if (rewardField[strength][i][j] > steepestPotential) {
 			    bestX = i;
 			    bestY = j;
@@ -363,18 +362,17 @@ public class Player implements pppp.sim.Player {
 		else {
 		    // if already playing music, keep playing unless lost all rats
 		    if (this.pipers.get(p).playedMusic == true) {
-			/*			if (numCapturedRats > 0) {			    
+			if (numCapturedRats > 0) {			    
 			    playMusic = true;
 			}
 			else {
-			    System.out.println("lost rats");
 			    playMusic = false;
-			    }*/
+			    }
 			playMusic = true;
 		    }
 		    else {
-			// if not already playing, play music when approaching local optima
-			if (this.pipers.get(p).getAbsMovement() < 0.65 && nearbyRats(src, rats) > 0) {
+			// if not already playing, play music when approaching local optima			
+			if (this.pipers.get(p).getAbsMovement() < 0.3 && nearbyRats(src, rats) > 0) {
 			    playMusic = true;
 			}
 			else {
