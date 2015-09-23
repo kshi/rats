@@ -39,7 +39,7 @@ public class Player implements pppp.sim.Player {
     private final double friendlyInDanger = 30;
     private final double D = 0.1;
     private final double playThreshold = 3;
-    private final double closeToGate = 18;
+    private final double closeToGate = 25;
 
     // modified sweep strategy variables
     private int sweepNumPipersSide1;
@@ -195,11 +195,7 @@ public class Player implements pppp.sim.Player {
 
     private void updateStrategy(Point[][] pipers, Point[] rats) {
         for(int i = 0; i < pipers[this.id].length; i++) {
-            if(rats.length > 25) {
-                if(this.pipers.get(i).strategy.type != StrategyType.sweep) {
-                    this.pipers.get(i).strategy = new Strategy(StrategyType.sweep);
-                }
-            } else if (rats.length > 4){
+	    if (rats.length > 4) {
                 this.pipers.get(i).strategy = new Strategy(StrategyType.diffusion);
             }
             else {
