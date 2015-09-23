@@ -440,6 +440,9 @@ public class Player implements pppp.sim.Player {
 		    }
 		    target = rats[closestRat];
 		}
+		else {
+		    target = new Point(0,0);
+		}
 		//don't play music near gate if a piper is behind the gate trying to pull rats in
 		if (distance(src, pipers[id][goalie]) < 15) {
 		    if (haveGateInfluence == true) {
