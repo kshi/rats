@@ -181,7 +181,7 @@ public class Player implements pppp.sim.Player {
     private void createPipers(Point[][] pipers, Point[] rats) {
         for(int i = 0; i < pipers[this.id].length; i++) {
             Strategy strategy;
-            if(rats.length > 25) {
+            if(rats.length > 25 && pipers[this.id].length >3) {
                 strategy = new Strategy(StrategyType.sweep);
             } else if (rats.length > 4){
                 strategy = new Strategy(StrategyType.diffusion);
