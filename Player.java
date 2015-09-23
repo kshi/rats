@@ -41,6 +41,14 @@ public class Player implements pppp.sim.Player {
     private final double playThreshold = 3;
     private final double closeToGate = 9;
 
+    // modified sweep strategy variables
+    private int sweepNumPipersSide1;
+    private int sweepNumPipersSide2;
+    private int sweepNumPipersSide3;
+    private int sweepNumPipersSide4;
+    private int sweepPoint1;
+    private int sweepPoint2;
+
     private Map<Integer, Rat> rats;
     private Map<Integer, Piper> pipers;
 
@@ -144,8 +152,22 @@ public class Player implements pppp.sim.Player {
 	    alphaY = 0;
 	    break;
 	}
-	
-	this.rewardField = new double[maxMusicStrength][N][N];
+
+        this.sweepNumPipersSide1 = this.sweepNumPipersSide2 = this.sweepNumPipersSide3 = this.sweepNumPipersSide4 =
+                pipers[0].length/4;
+        if(pipers[0].length%4 > 2) {
+            this.sweepNumPipersSide1++; this.sweepNumPipersSide2++; this.sweepNumPipersSide3++;
+        } else if(pipers[0].length%4 > 1) {
+            this.sweepNumPipersSide2++; this.sweepNumPipersSide3++;
+        } else if(pipers[0].length%4 > 0) {
+            this.sweepNumPipersSide2++;
+        }
+        int p1 = (side/2) - 7;
+        int p2 = (side/2)/5 + 7;
+        this.sweepPoint1 = Math.max(p1 ,p2);
+        this.sweepPoint2 = Math.min(p1 ,p2);
+
+        this.rewardField = new double[maxMusicStrength][N][N];
         this.rats = new HashMap<Integer, Rat>();
         this.pipers = new HashMap<Integer, Piper>();
 	//this.threatField = new double[maxMusicStrength][side*stepsPerUnit][side*stepsPerUnit];
@@ -409,21 +431,23 @@ public class Player implements pppp.sim.Player {
             Integer step = (Integer) piper.strategy.getProperty("step");
             switch (step) {
                 case 1:
-                    int p1 = (side/2) - 7; //43
-                    int p2 = (side/2)/5 + 7;  //17
-                    switch (piper.id) {
-                        case 0:
-                            target = point(-p1, p1, this.neg_y, this.swap);
-                            break;
-                        case 1:
-                            target = point(-p1, p2, this.neg_y, this.swap);
-                            break;
-                        case 2:
-                            target = point(p1, p2, this.neg_y, this.swap);
-                            break;
-                        case 3:
-                            target = point(p1, p1, this.neg_y, this.swap);
-                            break;
+                    int delta;
+                    if(piper.id < this.sweepNumPipersSide1) {
+                        // side 1
+                        delta = (piper.id)*(this.sweepPoint1-this.sweepPoint2)/this.sweepNumPipersSide1;
+                        target = point(this.sweepPoint1, this.sweepPoint1 - delta, this.neg_y, this.swap);
+                    } else if(piper.id < this.sweepNumPipersSide1 + this.sweepNumPipersSide2) {
+                        // side 2
+                        delta = (piper.id - this.sweepNumPipersSide1)*(this.sweepPoint1)/this.sweepNumPipersSide2;
+                        target = point(this.sweepPoint1 - delta, this.sweepPoint2, this.neg_y, this.swap);
+                    } else if(piper.id < this.sweepNumPipersSide1+this.sweepNumPipersSide2+this.sweepNumPipersSide3) {
+                        // side 3
+                        delta = (this.sweepNumPipersSide3 + this.sweepNumPipersSide2 + this.sweepNumPipersSide1 - piper.id - 1)*(this.sweepPoint1)/this.sweepNumPipersSide2;
+                        target = point(-this.sweepPoint1 + delta, this.sweepPoint2, this.neg_y, this.swap);
+                    } else {
+                        // side 4
+                        delta = (this.sweepNumPipersSide4 + this.sweepNumPipersSide3 + this.sweepNumPipersSide2 + this.sweepNumPipersSide1 - piper.id - 1)*(this.sweepPoint1-this.sweepPoint2)/this.sweepNumPipersSide4;
+                        target = point(-this.sweepPoint1, this.sweepPoint1 - delta, this.neg_y, this.swap);
                     }
                     piper.strategy.setProperty("step", 2);
                     break;
