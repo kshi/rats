@@ -35,7 +35,7 @@ public class Player implements pppp.sim.Player {
     private int totalRats;
     private double ratAttractor = baseRatAttractor;
     private final double enemyPiperRepulsor = 0;
-    private final double friendlyPiperRepulsor = -2;
+    private final double friendlyPiperRepulsor = -1;
     private final double friendlyInDanger = 30;
     private final double D = 0.1;
     private final double playThreshold = 3;
@@ -194,8 +194,20 @@ public class Player implements pppp.sim.Player {
     }
 
     private void updateStrategy(Point[][] pipers, Point[] rats) {
+	double ratClusters = rats.length;
+	for (int r=0; r<rats.length; r++) {
+	    for (int s=0; s<rats.length; s++) {
+		if (r != s) {
+		    double nearbyRats = 0;
+		    if (distance(rats[r], rats[s]) < 10) {
+			nearbyRats += 1;
+		    }
+		    ratClusters -= nearbyRats / (nearbyRats + 1);
+		}
+	    }
+	}	
         for(int i = 0; i < pipers[this.id].length; i++) {
-	    if (rats.length > 4) {
+	    if (ratClusters > 4) {
                 this.pipers.get(i).strategy = new Strategy(StrategyType.diffusion);
             }
             else {
