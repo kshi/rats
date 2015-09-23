@@ -196,16 +196,17 @@ public class Player implements pppp.sim.Player {
     private void updateStrategy(Point[][] pipers, Point[] rats) {
 	double ratClusters = rats.length;
 	for (int r=0; r<rats.length; r++) {
+	    double nearbyRats = 0;	    
 	    for (int s=0; s<rats.length; s++) {
 		if (r != s) {
-		    double nearbyRats = 0;
 		    if (distance(rats[r], rats[s]) < 10) {
 			nearbyRats += 1;
 		    }
-		    ratClusters -= nearbyRats / (nearbyRats + 1);
 		}
 	    }
-	}	
+	    ratClusters -= nearbyRats / (nearbyRats + 1);	    
+	}
+	//System.out.println(ratClusters);
         for(int i = 0; i < pipers[this.id].length; i++) {
 	    if (ratClusters > 4) {
                 this.pipers.get(i).strategy = new Strategy(StrategyType.diffusion);
@@ -349,6 +350,7 @@ public class Player implements pppp.sim.Player {
 	if (this.pipers.get(0).strategy.type != StrategyType.sweep) {
 	    updateStrategy(pipers,rats);
 	}
+	//System.out.println(this.pipers.get(0).strategy.type);
 	int numEnemiesNearGate = 0;
 	int numFriendliesNearGate = 0;
 	int goalie = -1;
@@ -553,9 +555,9 @@ public class Player implements pppp.sim.Player {
                         }
                         break;
                     case 5:
-                        if (nearbyRats(piper.curLocation, rats, 10) == 0) {
-                            piper.strategy = new Strategy(StrategyType.diffusion);
-                        }
+			//                        if (nearbyRats(piper.curLocation, rats, 10) == 0) {
+			piper.strategy = new Strategy(StrategyType.diffusion);
+			    //}
                         playMusic = true;
                         target = new Point(behindGateX, behindGateY);
                 }
