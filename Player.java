@@ -37,7 +37,7 @@ public class Player implements pppp.sim.Player {
     private final double enemyPiperRepulsor = 0;
     private final double friendlyPiperRepulsor = -2;
     private final double friendlyInDanger = 30;
-    private final double D = 0.5;
+    private final double D = 0.1;
     private final double playThreshold = 3;
     private final double closeToGate = 18;
 
@@ -338,9 +338,20 @@ public class Player implements pppp.sim.Player {
     public void play(Point[][] pipers, boolean[][] pipers_played,
 		     Point[] rats, Move[] moves)
     {
-	updateStrategy(pipers,rats);
+	if (this.pipers.get(0).strategy.type != StrategyType.sweep) {
+	    updateStrategy(pipers,rats);
+	}
 	int numEnemiesNearGate = 0;
 	int numFriendliesNearGate = 0;
+	int goalie = -1;
+	double goalieD = 0;
+	for (int p=0; p<pipers[id].length; p++) {
+	    double d = distance(new Point(gateX, gateY), pipers[id][p]);
+	    if (d < goalieD || goalie == -1) {
+		goalieD = d;
+		goalie = p;
+	    }
+	}	
 	for (int t=0; t<4; t++) {
 	    if (t != id) {
 		for (int p=0; p<pipers[t].length; p++) {
@@ -367,7 +378,7 @@ public class Player implements pppp.sim.Player {
 	    //int numCapturedRats = this.pipers.get(p).getNumCapturedRats();
 
 	    boolean playMusic = false;
-	    Point target = new Point(0,0);
+	    Point target;
 
 	    //piper is behind gate
 	    if (alphaX * pipers[id][p].x + alphaY * pipers[id][p].y > side/2) {
@@ -429,8 +440,11 @@ public class Player implements pppp.sim.Player {
 		    }
 		    target = rats[closestRat];
 		}
+		else {
+		    target = new Point(0,0);
+		}
 		//don't play music near gate if a piper is behind the gate trying to pull rats in
-		if (distance(src, new Point(gateX, gateY)) < closeToGate) {
+		if (distance(src, pipers[id][goalie]) < 15) {
 		    if (haveGateInfluence == true) {
 			playMusic = false;
 		    }
@@ -443,8 +457,7 @@ public class Player implements pppp.sim.Player {
 			}
 			else {
 			    playMusic = false;
-			    }
-			playMusic = true;
+			}
 		    }
 		    else {
 			// if not already playing, play music when approaching local optima			
