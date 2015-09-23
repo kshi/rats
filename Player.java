@@ -477,7 +477,7 @@ public class Player implements pppp.sim.Player {
 			}
 		    }
 		    else {
-			// if not already playing, play music when approaching local optima			
+			// if not already playing, play music when approaching local optima
 			if (this.pipers.get(p).getAbsMovement() < convergenceThreshold && numCapturedRats > 0) {
 			    playMusic = true;
 			}
@@ -588,7 +588,7 @@ public class Player implements pppp.sim.Player {
     // pass distanceThreshold as null to use a default threshold value
     private int nearbyRats(Point src, Point[] rats, Integer distanceThreshold) {
         int ratsNearby = 0;
-        int threshold = 8;
+        double threshold = 9.5;
         if(distanceThreshold != null) {
             threshold = distanceThreshold;
         }
