@@ -34,10 +34,10 @@ public class Player implements pppp.sim.Player {
     private final double baseRatAttractor = 40;
     private int totalRats;
     private double ratAttractor = baseRatAttractor;
-    private final double enemyPiperRepulsor = -100;
-    private final double friendlyPiperRepulsor = -5;
+    private final double enemyPiperRepulsor = 0;
+    private final double friendlyPiperRepulsor = -2;
     private final double friendlyInDanger = 30;
-    private final double D = 0.1;
+    private final double D = 0.5;
     private final double playThreshold = 3;
     private final double closeToGate = 18;
 
@@ -181,13 +181,31 @@ public class Player implements pppp.sim.Player {
     private void createPipers(Point[][] pipers, Point[] rats) {
         for(int i = 0; i < pipers[this.id].length; i++) {
             Strategy strategy;
-            if(rats.length > 15) {
+            if(rats.length > 25) {
                 strategy = new Strategy(StrategyType.sweep);
-            } else {
+            } else if (rats.length > 4){
                 strategy = new Strategy(StrategyType.diffusion);
             }
+	    else {
+		strategy = new Strategy(StrategyType.greedy);
+	    }
             this.pipers.put(i, new Piper(i, pipers[this.id][i], strategy));
         }
+    }
+
+    private void updateStrategy(Point[][] pipers, Point[] rats) {
+        for(int i = 0; i < pipers[this.id].length; i++) {
+            Strategy strategy;
+            if(rats.length > 25) {
+                strategy = new Strategy(StrategyType.sweep);
+            } else if (rats.length > 4){
+                strategy = new Strategy(StrategyType.diffusion);
+            }
+	    else {
+		strategy = new Strategy(StrategyType.greedy);
+	    }
+	    this.pipers.get(i).strategy = strategy;
+        }	
     }
 
     private void updatePipersAndRats(Point[] rats, Point[][] pipers, boolean[][] pipers_played) {
@@ -320,6 +338,7 @@ public class Player implements pppp.sim.Player {
     public void play(Point[][] pipers, boolean[][] pipers_played,
 		     Point[] rats, Move[] moves)
     {
+	updateStrategy(pipers,rats);
 	int numEnemiesNearGate = 0;
 	int numFriendliesNearGate = 0;
 	for (int t=0; t<4; t++) {
@@ -333,7 +352,7 @@ public class Player implements pppp.sim.Player {
 	}	
         updatePipersAndRats(rats, pipers, pipers_played);
 	boolean haveGateInfluence = false;
-	ratAttractor = baseRatAttractor * Math.pow((double) totalRats / (double) rats.length,2);
+	ratAttractor = baseRatAttractor * Math.pow((double) totalRats / (double) rats.length,3);
 	updateBoard(pipers, rats, pipers_played);
         Boolean allPipersWithinDistance = null;
 	for (int p = 0 ; p != pipers[id].length ; ++p) {
@@ -348,7 +367,7 @@ public class Player implements pppp.sim.Player {
 	    //int numCapturedRats = this.pipers.get(p).getNumCapturedRats();
 
 	    boolean playMusic = false;
-	    Point target;
+	    Point target = new Point(0,0);
 
 	    //piper is behind gate
 	    if (alphaX * pipers[id][p].x + alphaY * pipers[id][p].y > side/2) {
@@ -399,7 +418,16 @@ public class Player implements pppp.sim.Player {
 		    target = new Point(bestX / stepsPerUnit - side/2 - 10 + (perturber.nextFloat() - 0.5) / 10, bestY / stepsPerUnit - side/2 - 10 + (perturber.nextFloat() - 0.5) / 10);
 		}
 		else if (piper.strategy.type == StrategyType.greedy) {
-		    target = new Point(0,0);
+		    int closestRat = -1;
+		    double closestDist = 0;
+		    for (int r=0; r<rats.length; r++) {
+			double d = distance(new Point(gateX, gateY), rats[r]);
+			if (d < closestDist || closestRat == -1) {
+			    closestDist = d;
+			    closestRat = r;
+			}
+		    }
+		    target = rats[closestRat];
 		}
 		//don't play music near gate if a piper is behind the gate trying to pull rats in
 		if (distance(src, new Point(gateX, gateY)) < closeToGate) {
@@ -420,7 +448,7 @@ public class Player implements pppp.sim.Player {
 		    }
 		    else {
 			// if not already playing, play music when approaching local optima			
-			if (this.pipers.get(p).getAbsMovement() < 0.22 && nearbyRats(src, rats, null) > 0) {
+			if (this.pipers.get(p).getAbsMovement() < 0.2 && nearbyRats(src, rats, null) > 0) {
 			    playMusic = true;
 			}
 			else {
