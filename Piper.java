@@ -1,4 +1,4 @@
-package pppp.g0;
+package pppp.g2;
 
 import pppp.sim.Point;
 
@@ -25,8 +25,8 @@ public class Piper {
         this.prevLocation = null;
         this.curLocation = curLocation;
         this.playedMusic = false;
-	this.movementX = 0;
-	this.movementY = 0;
+	this.movementX = 1;
+	this.movementY = 1;
         this.strategy = new Strategy();
     }
 
@@ -36,8 +36,8 @@ public class Piper {
         this.prevLocation = null;
         this.curLocation = curLocation;
         this.playedMusic = false;
-        this.movementX = 0;
-	this.movementY = 0;
+        this.movementX = 1;
+	this.movementY = 1;
         this.strategy = strategy;
     }
 
@@ -47,8 +47,8 @@ public class Piper {
         this.prevLocation = null;
         this.curLocation = curLocation;
         this.playedMusic = playedMusic;
-        this.movementX = 0;
-	this.movementY = 0;
+        this.movementX = 1;
+	this.movementY = 1;
         this.strategy = new Strategy();
     }
 
@@ -58,7 +58,7 @@ public class Piper {
 
     public void updateLocation(Point point) {
 	if (this.prevLocation != null) {
-	    double memory = 8;
+	    double memory = 16;
 	    movementX = movementX * (memory - 1) / memory;
 	    movementY = movementY * (memory - 1) / memory;
 	    movementX += (point.x - this.prevLocation.x) / memory;
