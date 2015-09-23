@@ -324,10 +324,11 @@ public class Player implements pppp.sim.Player {
 	ratAttractor = baseRatAttractor * ((double) totalRats / (double) rats.length);
 	//	System.out.println(ratAttractor);
 	updateBoard(pipers, rats, pipers_played);
+        Boolean allPipersWithinDistance = null;
 	for (int p = 0 ; p != pipers[id].length ; ++p) {
         Piper piper = this.pipers.get(p);
         if(piper.strategy.type == StrategyType.sweep) {
-            moves[p] = modifiedSweep(piper, rats);
+            moves[p] = modifiedSweep(piper, rats, allPipersWithinDistance);
             continue;
         }
 	    Point src = pipers[id][p];
@@ -416,7 +417,7 @@ public class Player implements pppp.sim.Player {
         }
     }
 
-    private Move modifiedSweep(Piper piper, Point[] rats) {
+    private Move modifiedSweep(Piper piper, Point[] rats, Boolean allPipersWithinDistance) {
         boolean playMusic = false;
         Point target = null;
         if(piper.strategy.type != StrategyType.sweep || !piper.strategy.isPropertySet("step")) {
@@ -452,11 +453,18 @@ public class Player implements pppp.sim.Player {
                     piper.strategy.setProperty("step", 2);
                     break;
                 case 2:
+                    // in middle, should make a check that only if all pipers are in a certain distance with each other, move to step 4
                     playMusic = true;
-                    piper.strategy.setProperty("step", 4);
+                    if(allPipersWithinDistance == null) {
+                        allPipersWithinDistance = allPipersWithinDistance(8);
+                    }
+                    if(allPipersWithinDistance) {
+                        piper.strategy.setProperty("step", 4);
+                    }
                     target = new Point(alphaX * side/4, alphaY * side/4);
                     break;
                 case 3:
+                    // in front of gate
                     playMusic = true;
                     piper.strategy.setProperty("step", 4);
                     target = new Point(alphaX * (side/2 - 5), alphaY * (side/2 - 5));
@@ -476,6 +484,17 @@ public class Player implements pppp.sim.Player {
         }
         piper.strategy.setProperty("location", target);
         return move(piper.curLocation, target, playMusic);
+    }
+
+    private boolean allPipersWithinDistance(int distance) {
+        for(Piper piper1: this.pipers.values()) {
+            for(Piper piper2: this.pipers.values()) {
+                if(distance(piper1.curLocation, piper2.curLocation) > distance) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     // pass distanceThreshold as null to use a default threshold value
