@@ -442,7 +442,7 @@ public class Player implements pppp.sim.Player {
         boolean playMusic = false;
         Point target = null;
         if (allPipersWithinDistance == null) {
-            allPipersWithinDistance = allPipersWithinDistance(12);
+            allPipersWithinDistance = allPipersWithinDistance(10);
         }
         if(piper.strategy.type != StrategyType.sweep || !piper.strategy.isPropertySet("step")) {
             piper.strategy = new Strategy(StrategyType.sweep);
@@ -498,17 +498,18 @@ public class Player implements pppp.sim.Player {
                         playMusic = true;
                         if(allPipersWithinDistance) {
                             piper.strategy.setProperty("step", 5);
-                            target = new Point(behindGateX, behindGateY);
+                            target = new Point(gateX + 2*Math.random(), gateY + 2*Math.random());
                         } else {
                             target = (Point) piper.strategy.getProperty("location");
                         }
                         break;
                     case 5:
-                        if (nearbyRats(piper.curLocation, rats, 10) == 0) {
-                            piper.strategy = new Strategy(StrategyType.diffusion);
-                        }
+//                        if (nearbyRats(piper.curLocation, rats, 10) == 0) {
+//                            piper.strategy = new Strategy(StrategyType.diffusion);
+//                        }
                         playMusic = true;
                         target = new Point(behindGateX, behindGateY);
+                        piper.strategy = new Strategy(StrategyType.diffusion);
                 }
             }
         }
