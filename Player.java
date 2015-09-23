@@ -420,66 +420,75 @@ public class Player implements pppp.sim.Player {
     private Move modifiedSweep(Piper piper, Point[] rats, Boolean allPipersWithinDistance) {
         boolean playMusic = false;
         Point target = null;
+        if (allPipersWithinDistance == null) {
+            allPipersWithinDistance = allPipersWithinDistance(12);
+        }
         if(piper.strategy.type != StrategyType.sweep || !piper.strategy.isPropertySet("step")) {
             piper.strategy = new Strategy(StrategyType.sweep);
             piper.strategy.setProperty("step", 1);
             target = new Point(gateX, gateY);
             playMusic = false;
-        } else if(distance(piper.curLocation, (Point) piper.strategy.getProperty("location")) != 0) {
-            target = (Point) piper.strategy.getProperty("location");
-            playMusic = piper.playedMusic;
-        } else {
-            Integer step = (Integer) piper.strategy.getProperty("step");
-            switch (step) {
-                case 1:
-                    int delta;
-                    if(piper.id < this.sweepNumPipersSide1) {
-                        // side 1
-                        delta = (piper.id)*(this.sweepPoint1-this.sweepPoint2)/this.sweepNumPipersSide1;
-                        target = point(this.sweepPoint1, this.sweepPoint1 - delta, this.neg_y, this.swap);
-                    } else if(piper.id < this.sweepNumPipersSide1 + this.sweepNumPipersSide2) {
-                        // side 2
-                        delta = (piper.id - this.sweepNumPipersSide1)*(this.sweepPoint1)/this.sweepNumPipersSide2;
-                        target = point(this.sweepPoint1 - delta, this.sweepPoint2, this.neg_y, this.swap);
-                    } else if(piper.id < this.sweepNumPipersSide1+this.sweepNumPipersSide2+this.sweepNumPipersSide3) {
-                        // side 3
-                        delta = (this.sweepNumPipersSide3 + this.sweepNumPipersSide2 + this.sweepNumPipersSide1 - piper.id - 1)*(this.sweepPoint1)/this.sweepNumPipersSide2;
-                        target = point(-this.sweepPoint1 + delta, this.sweepPoint2, this.neg_y, this.swap);
-                    } else {
-                        // side 4
-                        delta = (this.sweepNumPipersSide4 + this.sweepNumPipersSide3 + this.sweepNumPipersSide2 + this.sweepNumPipersSide1 - piper.id - 1)*(this.sweepPoint1-this.sweepPoint2)/this.sweepNumPipersSide4;
-                        target = point(-this.sweepPoint1, this.sweepPoint1 - delta, this.neg_y, this.swap);
-                    }
-                    piper.strategy.setProperty("step", 2);
-                    break;
-                case 2:
-                    // in middle, should make a check that only if all pipers are in a certain distance with each other, move to step 4
-                    playMusic = true;
-                    if(allPipersWithinDistance == null) {
-                        allPipersWithinDistance = allPipersWithinDistance(8);
-                    }
-                    if(allPipersWithinDistance) {
+        } else if(4 == (Integer) piper.strategy.getProperty("step") && allPipersWithinDistance) {
+            piper.strategy.setProperty("step", 5);
+            playMusic = true;
+            target = new Point(behindGateX, behindGateY);
+        }
+        if(target == null) {
+            if (distance(piper.curLocation, (Point) piper.strategy.getProperty("location")) != 0) {
+                target = (Point) piper.strategy.getProperty("location");
+                playMusic = piper.playedMusic;
+            } else {
+                Integer step = (Integer) piper.strategy.getProperty("step");
+                switch (step) {
+                    case 1:
+                        int delta;
+                        if (piper.id < this.sweepNumPipersSide1) {
+                            // side 1
+                            delta = (piper.id) * (this.sweepPoint1 - this.sweepPoint2) / this.sweepNumPipersSide1;
+                            target = point(this.sweepPoint1, this.sweepPoint1 - delta, this.neg_y, this.swap);
+                        } else if (piper.id < this.sweepNumPipersSide1 + this.sweepNumPipersSide2) {
+                            // side 2
+                            delta = (piper.id - this.sweepNumPipersSide1) * (this.sweepPoint1) / this.sweepNumPipersSide2;
+                            target = point(this.sweepPoint1 - delta, this.sweepPoint2, this.neg_y, this.swap);
+                        } else if (piper.id < this.sweepNumPipersSide1 + this.sweepNumPipersSide2 + this.sweepNumPipersSide3) {
+                            // side 3
+                            delta = (this.sweepNumPipersSide3 + this.sweepNumPipersSide2 + this.sweepNumPipersSide1 - piper.id - 1) * (this.sweepPoint1) / this.sweepNumPipersSide2;
+                            target = point(-this.sweepPoint1 + delta, this.sweepPoint2, this.neg_y, this.swap);
+                        } else {
+                            // side 4
+                            delta = (this.sweepNumPipersSide4 + this.sweepNumPipersSide3 + this.sweepNumPipersSide2 + this.sweepNumPipersSide1 - piper.id - 1) * (this.sweepPoint1 - this.sweepPoint2) / this.sweepNumPipersSide4;
+                            target = point(-this.sweepPoint1, this.sweepPoint1 - delta, this.neg_y, this.swap);
+                        }
+                        piper.strategy.setProperty("step", 2);
+                        break;
+                    case 2:
+                        // in middle, should make a check that only if all pipers are in a certain distance with each other, move to step 4
+                        playMusic = true;
                         piper.strategy.setProperty("step", 4);
-                    }
-                    target = new Point(alphaX * side/4, alphaY * side/4);
-                    break;
-                case 3:
-                    // in front of gate
-                    playMusic = true;
-                    piper.strategy.setProperty("step", 4);
-                    target = new Point(alphaX * (side/2 - 5), alphaY * (side/2 - 5));
-                    break;
-                case 4:
-                    playMusic = true;
-                    piper.strategy.setProperty("step", 5);
-                    target = new Point(behindGateX, behindGateY);
-                    break;
-                case 5:
-                    if(nearbyRats(piper.curLocation, rats, 10) == 0) {
-                        piper.strategy = new Strategy(StrategyType.none);
-                    }
-                    playMusic = true;
-                    target = new Point(behindGateX, behindGateY);
+                        target = new Point(alphaX * side / 4, alphaY * side / 4);
+                        break;
+                    case 3:
+                        // in front of gate
+                        playMusic = true;
+                        piper.strategy.setProperty("step", 4);
+                        target = new Point(alphaX * (side / 2 - 5), alphaY * (side / 2 - 5));
+                        break;
+                    case 4:
+                        playMusic = true;
+                        if(allPipersWithinDistance) {
+                            piper.strategy.setProperty("step", 5);
+                            target = new Point(behindGateX, behindGateY);
+                        } else {
+                            target = (Point) piper.strategy.getProperty("location");
+                        }
+                        break;
+                    case 5:
+                        if (nearbyRats(piper.curLocation, rats, 10) == 0) {
+                            piper.strategy = new Strategy(StrategyType.none);
+                        }
+                        playMusic = true;
+                        target = new Point(behindGateX, behindGateY);
+                }
             }
         }
         piper.strategy.setProperty("location", target);
