@@ -499,7 +499,7 @@ public class Player implements pppp.sim.Player {
                         break;
                     case 5:
                         if (nearbyRats(piper.curLocation, rats, 10) == 0) {
-                            piper.strategy = new Strategy(StrategyType.none);
+                            piper.strategy = new Strategy(StrategyType.diffusion);
                         }
                         playMusic = true;
                         target = new Point(behindGateX, behindGateY);

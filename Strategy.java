@@ -12,7 +12,7 @@ public class Strategy {
     public Map<String, Object> properties;
 
     public Strategy() {
-        this.type = StrategyType.none;
+        this.type = StrategyType.diffusion;
         this.properties = new HashMap<String, Object>();
     }
 
