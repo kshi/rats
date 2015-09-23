@@ -523,7 +523,7 @@ public class Player implements pppp.sim.Player {
                         // in middle, should make a check that only if all pipers are in a certain distance with each other, move to step 4
                         playMusic = true;
                         piper.strategy.setProperty("step", 4);
-                        target = new Point(alphaX * side / 4, alphaY * side / 4);
+                        target = new Point(alphaX * 3 * side / 10, alphaY * 3 * side / 10);
                         break;
                     case 3:
                         // in front of gate
@@ -541,12 +541,11 @@ public class Player implements pppp.sim.Player {
                         }
                         break;
                     case 5:
-//                        if (nearbyRats(piper.curLocation, rats, 10) == 0) {
-//                            piper.strategy = new Strategy(StrategyType.diffusion);
-//                        }
+                        if (nearbyRats(piper.curLocation, rats, 10) == 0) {
+                            piper.strategy = new Strategy(StrategyType.diffusion);
+                        }
                         playMusic = true;
                         target = new Point(behindGateX, behindGateY);
-                        piper.strategy = new Strategy(StrategyType.diffusion);
                 }
             }
         }
