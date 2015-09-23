@@ -34,8 +34,8 @@ public class Player implements pppp.sim.Player {
     private final double baseRatAttractor = 40;
     private int totalRats;
     private double ratAttractor = baseRatAttractor;
-    private final double enemyPiperRepulsor = 0;
-    private final double friendlyPiperRepulsor = 0;
+    private final double enemyPiperRepulsor = -100;
+    private final double friendlyPiperRepulsor = -5;
     private final double friendlyInDanger = 30;
     private final double D = 0.1;
     private final double playThreshold = 3;
@@ -333,7 +333,7 @@ public class Player implements pppp.sim.Player {
 	}	
         updatePipersAndRats(rats, pipers, pipers_played);
 	boolean haveGateInfluence = false;
-	ratAttractor = baseRatAttractor * ((double) totalRats / (double) rats.length);
+	ratAttractor = baseRatAttractor * Math.pow((double) totalRats / (double) rats.length,2);
 	updateBoard(pipers, rats, pipers_played);
         Boolean allPipersWithinDistance = null;
 	for (int p = 0 ; p != pipers[id].length ; ++p) {
@@ -379,22 +379,28 @@ public class Player implements pppp.sim.Player {
 
 	    //piper should capture more rats
 	    else {
-		int strength = Math.min(getMusicStrength(src, pipers[id],25),maxMusicStrength-1);
-		int x = (int)Math.round((src.x + side/2 + 10)*stepsPerUnit);
-		int y = (int)Math.round((src.y + side/2 + 10)*stepsPerUnit);
-		int bestX = -1;
-		int bestY = -1;
-		double steepestPotential = -1000;
-		for (int i=Math.max(x-3,0); i<=Math.min(x+3,N-1); i++) {
-		    for (int j=Math.max(y-3,0); j<=Math.min(y+3,N-1); j++){
-			if (rewardField[strength][i][j] > steepestPotential) {
-			    bestX = i;
-			    bestY = j;
-			    steepestPotential = rewardField[strength][i][j];
+
+		if (piper.strategy.type == StrategyType.diffusion) {
+		    int strength = Math.min(getMusicStrength(src, pipers[id],25),maxMusicStrength-1);
+		    int x = (int)Math.round((src.x + side/2 + 10)*stepsPerUnit);
+		    int y = (int)Math.round((src.y + side/2 + 10)*stepsPerUnit);
+		    int bestX = -1;
+		    int bestY = -1;
+		    double steepestPotential = -1000;
+		    for (int i=Math.max(x-3,0); i<=Math.min(x+3,N-1); i++) {
+			for (int j=Math.max(y-3,0); j<=Math.min(y+3,N-1); j++){
+			    if (rewardField[strength][i][j] > steepestPotential) {
+				bestX = i;
+				bestY = j;
+				steepestPotential = rewardField[strength][i][j];
+			    }
 			}
 		    }
+		    target = new Point(bestX / stepsPerUnit - side/2 - 10 + (perturber.nextFloat() - 0.5) / 10, bestY / stepsPerUnit - side/2 - 10 + (perturber.nextFloat() - 0.5) / 10);
 		}
-		target = new Point(bestX / stepsPerUnit - side/2 - 10 + (perturber.nextFloat() - 0.5) / 10, bestY / stepsPerUnit - side/2 - 10 + (perturber.nextFloat() - 0.5) / 10);
+		else if (piper.strategy.type == StrategyType.greedy) {
+		    target = new Point(0,0);
+		}
 		//don't play music near gate if a piper is behind the gate trying to pull rats in
 		if (distance(src, new Point(gateX, gateY)) < closeToGate) {
 		    if (haveGateInfluence == true) {
