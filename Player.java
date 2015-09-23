@@ -195,16 +195,16 @@ public class Player implements pppp.sim.Player {
 
     private void updateStrategy(Point[][] pipers, Point[] rats) {
         for(int i = 0; i < pipers[this.id].length; i++) {
-            Strategy strategy;
             if(rats.length > 25) {
-                strategy = new Strategy(StrategyType.sweep);
+                if(this.pipers.get(i).strategy.type != StrategyType.sweep) {
+                    this.pipers.get(i).strategy = new Strategy(StrategyType.sweep);
+                }
             } else if (rats.length > 4){
-                strategy = new Strategy(StrategyType.diffusion);
+                this.pipers.get(i).strategy = new Strategy(StrategyType.diffusion);
             }
-	    else {
-		strategy = new Strategy(StrategyType.greedy);
-	    }
-	    this.pipers.get(i).strategy = strategy;
+            else {
+                this.pipers.get(i).strategy = new Strategy(StrategyType.greedy);
+            }
         }	
     }
 
@@ -439,9 +439,6 @@ public class Player implements pppp.sim.Player {
 			}
 		    }
 		    target = rats[closestRat];
-		}
-		else {
-		    target = new Point(0,0);
 		}
 		//don't play music near gate if a piper is behind the gate trying to pull rats in
 		if (distance(src, pipers[id][goalie]) < 15) {
