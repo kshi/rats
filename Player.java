@@ -206,7 +206,7 @@ public class Player implements pppp.sim.Player {
             Strategy strategy;
             if(rats.length > 25 && pipers[this.id].length >3) {
                 strategy = new Strategy(StrategyType.sweep);
-            } else if (rats.length > 4){
+            } else if (numberOfRatClusters(rats) > 4){
                 strategy = new Strategy(StrategyType.diffusion);
             }
 	    else {
@@ -217,27 +217,36 @@ public class Player implements pppp.sim.Player {
     }
 
     private void updateStrategy(Point[][] pipers, Point[] rats) {
-	double ratClusters = rats.length;
-	for (int r=0; r<rats.length; r++) {
-	    double nearbyRats = 0;	    
-	    for (int s=0; s<rats.length; s++) {
-		if (r != s) {
-		    if (distance(rats[r], rats[s]) < 10) {
-			nearbyRats += 1;
-		    }
-		}
-	    }
-	    ratClusters -= nearbyRats / (nearbyRats + 1);	    
-	}
-	//System.out.println(ratClusters);
+        double ratClusters = numberOfRatClusters(rats);
+        //System.out.println(ratClusters);
         for(int i = 0; i < pipers[this.id].length; i++) {
-	    if (ratClusters > 4) {
-                this.pipers.get(i).strategy = new Strategy(StrategyType.diffusion);
+            Piper piper = this.pipers.get(i);
+            if(piper.strategy.type == StrategyType.adversarial) {
+                continue;
+            }
+            if (ratClusters > 4) {
+                piper.strategy = new Strategy(StrategyType.diffusion);
             }
             else {
-                this.pipers.get(i).strategy = new Strategy(StrategyType.greedy);
+                piper.strategy = new Strategy(StrategyType.greedy);
             }
-        }	
+        }
+    }
+
+    private double numberOfRatClusters(Point[] rats) {
+        double ratClusters = rats.length;
+        for (int r=0; r<rats.length; r++) {
+            double nearbyRats = 0;
+            for (int s=0; s<rats.length; s++) {
+                if (r != s) {
+                    if (distance(rats[r], rats[s]) < 10) {
+                        nearbyRats += 1;
+                    }
+                }
+            }
+            ratClusters -= nearbyRats / (nearbyRats + 1);
+        }
+        return ratClusters;
     }
 
     private void updatePipersAndRats(Point[] rats, Point[][] pipers, boolean[][] pipers_played) {
@@ -391,6 +400,12 @@ public class Player implements pppp.sim.Player {
             moves[p] = modifiedSweep(piper, rats, allPipersWithinDistance);
             continue;
         }
+        if(piper.strategy.type == StrategyType.adversarial) {
+            moves[p] = adversarial(piper, rats, pipers, pipers_played);
+            if(moves[p] != null) {
+                continue;
+            }
+        }
 	    Point src = pipers[id][p];
 	    // return back
 	    int numCapturedRats = nearbyRats(src, rats, 7);
@@ -447,16 +462,7 @@ public class Player implements pppp.sim.Player {
 		    target = new Point(bestX / step - side/2 - 10 + (perturber.nextFloat() - 0.5) / 10, bestY / step - side/2 - 10 + (perturber.nextFloat() - 0.5) / 10);
 		}
 		else if (piper.strategy.type == StrategyType.greedy) {
-		    int closestRat = -1;
-		    double closestDist = 0;
-		    for (int r=0; r<rats.length; r++) {
-			double d = distance(new Point(gateX, gateY), rats[r]);
-			if (d < closestDist || closestRat == -1) {
-			    closestDist = d;
-			    closestRat = r;
-			}
-		    }
-		    target = rats[closestRat];
+            target = greedy(rats);
 		}
 		else {
 		    target = new Point(0,0);
@@ -494,6 +500,19 @@ public class Player implements pppp.sim.Player {
 	/*        for(int i = 0; i < moves.length; i++) {
             this.pipers.get(i).playedMusic = moves[i].play;
 	    }*/
+    }
+
+    private Point greedy(Point[] rats) {
+        int closestRat = -1;
+        double closestDist = 0;
+        for (int r=0; r<rats.length; r++) {
+            double d = distance(new Point(gateX, gateY), rats[r]);
+            if (d < closestDist || closestRat == -1) {
+                closestDist = d;
+                closestRat = r;
+            }
+        }
+        return rats[closestRat];
     }
 
     private Move modifiedSweep(Piper piper, Point[] rats, Boolean allPipersWithinDistance) {
@@ -572,6 +591,97 @@ public class Player implements pppp.sim.Player {
         }
         piper.strategy.setProperty("location", target);
         return move(piper.curLocation, target, playMusic);
+    }
+
+    private Move adversarial(Piper piper, Point[] rats, Point[][] pipers, boolean[][] pipers_played) {
+        boolean playMusic = false;
+        Point target = null;
+        Point src = piper.curLocation;
+        double distanceThreshold = 1;
+        if(piper.strategy.type != StrategyType.adversarial || !piper.strategy.isPropertySet("step")) {
+            piper.strategy = new Strategy(StrategyType.adversarial);
+            piper.strategy.setProperty("step", 1);
+            // find the closest piper
+            target = closestPlayingEnemyPiper(src, pipers, pipers_played);
+            playMusic = false;
+        } else {
+            // step 1 is going to the enemy
+            // step 2 is staying there and playing music for 10 ticks
+            // step 3 is start moving towards our gate
+            Integer step = (Integer) piper.strategy.getProperty("step");
+            switch (step) {
+                case 1:
+                    // stay there
+                    target = closestPlayingEnemyPiper(src, pipers, pipers_played);
+                    if(target != null) {
+                        if ((distance(src, target) < distanceThreshold)) {
+                            playMusic = true;
+                            piper.strategy.setProperty("ticks", 0);
+                            piper.strategy.setProperty("step", 2);
+                        } else {
+                            playMusic = false;
+                        }
+                    }
+                    break;
+                case 2:
+                    // stay there for 10 ticks and then start moving towards gate
+                    target = (Point) piper.strategy.getProperty("location");
+                    playMusic = true;
+                    piper.strategy.incrementProperty("ticks");
+                    if((Integer) piper.strategy.getProperty("ticks") > 100) {
+                        piper.strategy.setProperty("step", 3);
+                        target = new Point(gateX, gateY);
+                    }
+                    break;
+                case 3:
+                    if(nearbyRats(src, rats, null) == 0) {
+                        piper.strategy = new Strategy(StrategyType.diffusion);
+                    } else if (distance(src, (Point) piper.strategy.getProperty("location")) == 0) {
+                        target = new Point(behindGateX, behindGateY);
+                        piper.strategy.setProperty("step", 4);
+                    } else {
+                        target = new Point(gateX, gateY);
+                    }
+                    playMusic = true;
+                    break;
+                case 4:
+                    if(nearbyRats(src, rats, null) == 0) {
+                        piper.strategy = new Strategy(StrategyType.diffusion);
+                    } else {
+                        target = new Point(behindGateX, behindGateY);
+                    }
+                    playMusic = true;
+                    break;
+            }
+        }
+
+        if(target == null) {
+            // use some other strategy
+            piper.strategy = new Strategy(StrategyType.greedy);
+            return null;
+        }
+        piper.strategy.setProperty("location", target);
+        return move(src, target, playMusic);
+    }
+
+    private Point closestPlayingEnemyPiper(Point src, Point[][] pipers, boolean[][] pipers_played) {
+        double leastDistance = Integer.MAX_VALUE;
+        Point result = null;
+        for(int i = 0; i < pipers_played.length; i++) {
+            if(i == this.id) {
+                continue;
+            }
+            for(int j = 0; j < pipers_played[i].length; j++) {
+                if(pipers_played[i][j]) {
+                    double distance = distance(src, pipers[i][j]);
+                    if(distance < leastDistance) {
+                        result = pipers[i][j];
+                        leastDistance = distance;
+                    }
+                }
+            }
+        }
+        return result;
     }
 
     private boolean allPipersWithinDistance(int distance) {
