@@ -375,14 +375,14 @@ public class Player implements pppp.sim.Player {
 		}
 	    }
 	}
-	for (int t=0; t<4; t++) {
+	/*	for (int t=0; t<4; t++) {
 	    if (t != id) {
 		for (int p=0; p<pipers[t].length; p++) {
 		    returnField[ (int) Math.round((pipers[t][p].x + side/2 + 10)*step)][ (int) Math.round((pipers[t][p].y + side/2 + 10)*step)] = enemyRepulsor;
 		    sweepField[ (int) Math.round((pipers[t][p].x + side/2 + 10)*step)][ (int) Math.round((pipers[t][p].y + side/2 + 10)*step)] = enemyRepulsor;		    
 		}
 	    }
-	}
+	    }*/
 	sweepField[(int) Math.round((alphaX * 3 * side / 10 + side/2 + 10) * step)][ (int) Math.round((alphaY * 3 * side / 10 + side/2 + 10) * step) ] = homeThreshold;
 	returnField[ (int) Math.round((gateX + side/2 + 10) * step)][ (int) Math.round((gateY + side/2 + 10) * step)] = homeThreshold;	
     }
@@ -435,7 +435,7 @@ public class Player implements pppp.sim.Player {
             }
         }
 	    Point src = pipers[id][p];
-	    int numCapturedRats = nearbyRats(src, rats, 7);
+	    int numCapturedRats = nearbyRats(src, rats, 10);
 
 	    boolean playMusic = false;
 	    Point target;
