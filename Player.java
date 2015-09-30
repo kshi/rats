@@ -435,7 +435,7 @@ public class Player implements pppp.sim.Player {
 	for (int p = 0 ; p != pipers[id].length ; ++p) {
         Piper piper = this.pipers.get(p);
         if(piper.strategy.type == StrategyType.sweep) {
-            moves[p] = modifiedSweep(piper, rats, allPipersWithinDistance);
+            moves[p] = modifiedSweep(piper, rats, allPipersWithinDistance, pipers);
             continue;
         }
         if(piper.strategy.type == StrategyType.adversarial) {
@@ -585,7 +585,7 @@ public class Player implements pppp.sim.Player {
         return rats[closestRat];
     }
 
-    private Move modifiedSweep(Piper piper, Point[] rats, Boolean allPipersWithinDistance) {
+    private Move modifiedSweep(Piper piper, Point[] rats, Boolean allPipersWithinDistance, Point[][] pipers) {
         boolean playMusic = false;
         Point target = null;
         if (allPipersWithinDistance == null) {
@@ -603,6 +603,15 @@ public class Player implements pppp.sim.Player {
 		target = new Point(behindGateX, behindGateY);
 	    }
 	    else {
+		int numCapturedRats = 0;
+		for (int p=0; p<pipers[id].length; p++) {
+		    numCapturedRats += nearbyRats(pipers[id][p], rats, 10);
+		}
+		if (numCapturedRats == 0) {
+		    for (int p=0; p<pipers[id].length; p++) {
+			this.pipers.get(p).strategy.type = StrategyType.diffusion;
+		    }
+		}
 		Point src = piper.curLocation;
 		int x = (int)Math.round((src.x + side/2 + 10)*step);
 		int y = (int)Math.round((src.y + side/2 + 10)*step);
@@ -620,7 +629,7 @@ public class Player implements pppp.sim.Player {
 		    }
 		}
 		target = new Point(bestX / step - side/2 - 10, bestY / step - side/2 - 10 );
-		playMusic = true;
+		playMusic = true;		
 	    }
         }
         if(target == null) {
