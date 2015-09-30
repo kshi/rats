@@ -409,6 +409,7 @@ public class Player implements pppp.sim.Player {
     public void play(Point[][] pipers, boolean[][] pipers_played,
 		     Point[] rats, Move[] moves)
     {
+	double expNumRats = rats.length * 100 * 3.14 / (2*side*side);
 	if (this.pipers.get(0).strategy.type != StrategyType.sweep) {
 	    updateStrategy(pipers,rats);
 	}
@@ -460,7 +461,7 @@ public class Player implements pppp.sim.Player {
 
 	    //piper is behind gate
 	    if (alphaX * pipers[id][p].x + alphaY * pipers[id][p].y > side/2) {
-		if (numCapturedRats > rats.length * 100 * 3.14 / (2*side*side) && haveGateInfluence == false && distance(pipers[id][p], new Point(behindGateX, behindGateY)) < 2.2 && has_left_gate) {
+		if (numCapturedRats > expNumRats && haveGateInfluence == false && distance(pipers[id][p], new Point(behindGateX, behindGateY)) < 2.2 && has_left_gate) {
 		    target = new Point(behindGateX, behindGateY);
 		    playMusic = true;
 		    numFriendliesNearGate++;
@@ -546,11 +547,21 @@ public class Player implements pppp.sim.Player {
 		    }
 		    else {
 			// if not already playing, play music when approaching local optima
-			if (this.pipers.get(p).getAbsMovement() < convergenceThreshold && numCapturedRats > 0) {
-			    playMusic = true;
+			if (this.pipers.get(p).strategy.type == StrategyType.diffusion) {
+			    if (this.pipers.get(p).getAbsMovement() < convergenceThreshold && numCapturedRats > 0) {
+				playMusic = true;
+			    }
+			    else {
+				playMusic = false;
+			    }
 			}
 			else {
-			    playMusic = false;
+			    if (numCapturedRats > expNumRats) {
+				playMusic = true;
+			    }
+			    else {
+				playMusic = false;
+			    }
 			}
 		    }
 		}
