@@ -138,38 +138,31 @@ public class Player implements pppp.sim.Player {
 		    newSweepField[x][y] = sweepField[x][y] + D * (sweepField[x-1][y] + sweepField[x][y-1] + sweepField[x+1][y] + sweepField[x][y+1]);		    
 	    }
 	}
-	for (int t=0; t<4; t++) {
-	    for (int p=0; p<pipers[t].length; p++) {
-		int gridX = (int) (( pipers[t][p].x + side/2 + 10) * step);
-		int gridY = (int) (( pipers[t][p].y + side/2 + 10) * step);
-		int maxEnemyStrength = 0;
-		int friendlyStrength = getMusicStrength(pipers[id][p], pipers[id], 12);
-		for (int tt=0; tt<4; tt++) {
-		    if (tt != id) {
-			int tStrength = getMusicStrength(pipers[t][p], pipers[tt], 20);
-			if (tStrength > maxEnemyStrength) { maxEnemyStrength = tStrength;}			    
-		    }
-		}
-		if (t != id) {
-		    if (maxEnemyStrength - friendlyStrength < pipers[id].length / 2) {
+	//	for (int t=0; t<4; t++) {
+	int t = id;
+	for (int p=0; p<pipers[t].length; p++) {
+	    int gridX = (int) (( pipers[t][p].x + side/2 + 10) * step);
+	    int gridY = (int) (( pipers[t][p].y + side/2 + 10) * step);
+	    int maxEnemyStrength = this.pipers.get(p).maxEnemyStrength;
+	    int friendlyStrength = this.pipers.get(p).friendlyStrength;
+	    /*		if (t != id) {
+			if (maxEnemyStrength - friendlyStrength < pipers[id].length / 2) {
 			newRewardField[ gridX ][ gridY ] *= Math.pow(enemyCompCoef, maxEnemyStrength - friendlyStrength);
 			newReturnField[ gridX ][ gridY ] *= Math.pow(enemyCompCoef, maxEnemyStrength - friendlyStrength);
 			newSweepField[ gridX ][ gridY ] *= Math.pow(enemyCompCoef, maxEnemyStrength - friendlyStrength);
-		    }
+			}
+			}*/
+	    //		else {
+	    if (distance(pipers[id][p], new Point(gateX, gateY)) > closeToGate) {
+		if (maxEnemyStrength == 0) {
+		    newRewardField[ gridX ][ gridY ] *= friendlyCompCoef;
+		    newReturnField[ gridX ][ gridY ] *= friendlyCompCoef;
+		    newSweepField[ gridX ][ gridY ] *= friendlyCompCoef;						
 		}
 		else {
-		    if (distance(pipers[id][p], new Point(gateX, gateY)) > closeToGate) {
-			    if (maxEnemyStrength == 0) {
-				newRewardField[ gridX ][ gridY ] *= friendlyCompCoef;
-				newReturnField[ gridX ][ gridY ] *= friendlyCompCoef;
-				newSweepField[ gridX ][ gridY ] *= friendlyCompCoef;						
-			    }
-			    else {
-				newRewardField[ gridX ][ gridY ] *= Math.pow(collabCoef, Math.max(maxEnemyStrength - friendlyStrength,0));
-				newReturnField[ gridX ][ gridY ] *= Math.pow(collabCoef, Math.max(maxEnemyStrength - friendlyStrength,0));
-				newSweepField[ gridX ][ gridY ] *= Math.pow(collabCoef, Math.max(maxEnemyStrength - friendlyStrength,0));
-			    }
-		    }
+		    newRewardField[ gridX ][ gridY ] *= Math.pow(collabCoef, Math.max(maxEnemyStrength - friendlyStrength,0));
+		    newReturnField[ gridX ][ gridY ] *= Math.pow(collabCoef, Math.max(maxEnemyStrength - friendlyStrength,0));
+		    newSweepField[ gridX ][ gridY ] *= Math.pow(collabCoef, Math.max(maxEnemyStrength - friendlyStrength,0));
 		}
 	    }
 	}
@@ -311,6 +304,23 @@ public class Player implements pppp.sim.Player {
 	    //            this.pipers.get(p).resetRats();
 	    this.pipers.get(p).updateLocation(pipers[id][p]);
         }
+	for (int t=0; t<4; t++) {
+	    for (int p=0; p<pipers[t].length; p++) {
+		int gridX = (int) (( pipers[t][p].x + side/2 + 10) * step);
+		int gridY = (int) (( pipers[t][p].y + side/2 + 10) * step);
+		int maxEnemyStrength = 0;
+		int friendlyStrength = getMusicStrength(pipers[id][p], pipers[id], 12);
+		for (int tt=0; tt<4; tt++) {
+		    if (tt != id) {
+			int tStrength = getMusicStrength(pipers[t][p], pipers[tt], 20);
+			if (tStrength > maxEnemyStrength) { maxEnemyStrength = tStrength;}			    
+		    }
+		}
+		this.pipers.get(p).friendlyStrength = friendlyStrength;
+		this.pipers.get(p).maxEnemyStrength = maxEnemyStrength;
+	    }
+	}
+	
         /*for(int i =0; i < rats.length; i++) {
             if(rats[i] == null) {
                 if(this.rats.containsKey(i)) {

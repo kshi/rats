@@ -18,6 +18,8 @@ public class Piper {
     public double movementX;
     public double movementY;
     public Strategy strategy;
+    public int friendlyStrength;
+    public int maxEnemyStrength;
 
     public Piper(int id, Point curLocation) {
         this.id = id;
