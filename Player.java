@@ -460,7 +460,7 @@ public class Player implements pppp.sim.Player {
 
 	    //piper is behind gate
 	    if (alphaX * pipers[id][p].x + alphaY * pipers[id][p].y > side/2) {
-		if (numCapturedRats > 0 && haveGateInfluence == false && distance(pipers[id][p], new Point(behindGateX, behindGateY)) < 2.2 && has_left_gate) {
+		if (numCapturedRats > rats.length * 100 * 3.14 / (2*side*side) && haveGateInfluence == false && distance(pipers[id][p], new Point(behindGateX, behindGateY)) < 2.2 && has_left_gate) {
 		    target = new Point(behindGateX, behindGateY);
 		    playMusic = true;
 		    numFriendliesNearGate++;
