@@ -41,14 +41,14 @@ public class Player implements pppp.sim.Player {
     private final double friendlyCompCoef = 0.5;
     private final double enemyCompCoef = 1;
     private final double friendlyInDanger = 30;
-    private final double D = 0.4;
+    private final double D = 0.45;
     private final double playThreshold = 3;
     private final double closeToGate = 25;
     private final double homeThreshold = 4000;
     private double homeX;
     private double homeY;
     private final double enemyRepulsor = 0;
-    private double convergenceThreshold = 0.2;
+    private double convergenceThreshold = 0.35;
 
     // modified sweep strategy variables
     private int sweepNumPipersSide1;
@@ -247,7 +247,7 @@ public class Player implements pppp.sim.Player {
         this.pipers = new HashMap<Integer, Piper>();
 	updateBoard(pipers,rats,new boolean[N][N]);
 	createPipers(pipers, rats);
-	updatePipersAndRats(rats, pipers, new boolean[4][pipers[0].length]);
+	updatePipersAndRats(pipers, new boolean[4][pipers[0].length]);
 	/*	for (int iter=0; iter<N; iter++) {
 	    diffuse(pipers);
 	    }*/
@@ -286,24 +286,29 @@ public class Player implements pppp.sim.Player {
     }
 
     private double numberOfRatClusters(Point[] rats) {
-        double ratClusters = rats.length;
-        for (int r=0; r<rats.length; r++) {
-            double nearbyRats = 0;
-            for (int s=0; s<rats.length; s++) {
-                if (r != s) {
-                    if (distance(rats[r], rats[s]) < 10) {
-                        nearbyRats += 1;
-                    }
-                }
-            }
-            ratClusters -= nearbyRats / (nearbyRats + 1);
-        }
-        return ratClusters;
+	if (rats.length < 25) {
+	    double ratClusters = rats.length;
+	    for (int r=0; r<rats.length; r++) {
+		double nearbyRats = 0;
+		for (int s=0; s<rats.length; s++) {
+		    if (r != s) {
+			if (distance(rats[r], rats[s]) < 10) {
+			    nearbyRats += 1;
+			}
+		    }
+		}
+		ratClusters -= nearbyRats / (nearbyRats + 1);
+	    }
+	    return ratClusters;
+	}
+	else {
+	    return 100;
+	}
     }
 
-    private void updatePipersAndRats(Point[] rats, Point[][] pipers, boolean[][] pipers_played) {
+    private void updatePipersAndRats(Point[][] pipers, boolean[][] pipers_played) {
 	for (int p=0; p<pipers[id].length; p++) {
-            this.pipers.get(p).resetRats();
+	    //            this.pipers.get(p).resetRats();
 	    this.pipers.get(p).updateLocation(pipers[id][p]);
         }
         /*for(int i =0; i < rats.length; i++) {
@@ -322,7 +327,7 @@ public class Player implements pppp.sim.Player {
 	    }*/
     }
 
-    private void updateRat(Rat rat, Point location, Point[][] pipers, boolean[][] pipers_played) {
+    /*private void updateRat(Rat rat, Point location, Point[][] pipers, boolean[][] pipers_played) {
         rat.updateLocation(location);
         int maxPipersNearbySingleTeam = 0;
         int ratCapturedTeamId = -1;
@@ -379,7 +384,7 @@ public class Player implements pppp.sim.Player {
             rat.captured = true;
             rat.hasEnemyCaptured = false;
         }
-    }
+	}*/
 
     private boolean isCaptured(Point loc, Point[][] pipers) {
 	int friendlyMusicStrength = getMusicStrength(loc, pipers[id],10);
@@ -427,7 +432,7 @@ public class Player implements pppp.sim.Player {
 		}
 	    }
 	}	
-        updatePipersAndRats(rats, pipers, pipers_played);
+        updatePipersAndRats(pipers, pipers_played);
 	boolean haveGateInfluence = false;
 	ratAttractor = baseRatAttractor * Math.exp((double) totalRats / (double) rats.length);
 	updateBoard(pipers, rats, pipers_played);	    	
@@ -468,7 +473,7 @@ public class Player implements pppp.sim.Player {
 		}
 	    }
 	    //piper has captured enough rats
-	    else if(numCapturedRats >= 1 + rats.length / (4*pipers[id].length*3) && ((distance(src, new Point(gateX, gateY)) > closeToGate) || haveGateInfluence == false) ) {
+	    else if(numCapturedRats >= 1 + rats.length / (4*pipers[id].length*3) && this.pipers.get(p).playedMusic && ((distance(src, new Point(gateX, gateY)) > closeToGate) || haveGateInfluence == false) ) {
 		has_left_gate = true;		
 		if (distance(src, new Point(gateX, gateY)) > closeToGate) {
 		    if (piper.strategy.type == StrategyType.diffusion) {
