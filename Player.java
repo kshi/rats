@@ -604,13 +604,15 @@ public class Player implements pppp.sim.Player {
 		target = new Point(behindGateX, behindGateY);
 	    }
 	    else {
-		int numCapturedRats = 0;
-		for (int p=0; p<pipers[id].length; p++) {
-		    numCapturedRats += nearbyRats(pipers[id][p], rats, 10);
-		}
-		if (numCapturedRats == 0) {
+		if (rats.length < 50) {
+		    int numCapturedRats = 0;
 		    for (int p=0; p<pipers[id].length; p++) {
-			this.pipers.get(p).strategy.type = StrategyType.diffusion;
+			numCapturedRats += nearbyRats(pipers[id][p], rats, 10);
+		    }
+		    if (numCapturedRats == 0) {
+			for (int p=0; p<pipers[id].length; p++) {
+			    this.pipers.get(p).strategy.type = StrategyType.diffusion;
+			}
 		    }
 		}
 		Point src = piper.curLocation;
