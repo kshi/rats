@@ -445,8 +445,15 @@ public class Player implements pppp.sim.Player {
             }
         }
 	    Point src = pipers[id][p];
-	    int numCapturedRats = nearbyRats(src, rats, 10);
-	    int numCloseRats = nearbyRats(src, rats, 5);
+
+	    int captureThreshold = 0;
+	    if (this.pipers.get(p).strategy.type == StrategyType.diffusion) {
+		captureThreshold = 10;
+	    }
+	    else if (this.pipers.get(p).strategy.type == StrategyType.greedy) {
+		captureThreshold = 5;
+	    }
+	    int numCapturedRats = nearbyRats(src, rats, captureThreshold);
 
 	    boolean playMusic = false;
 	    Point target;
@@ -530,14 +537,7 @@ public class Player implements pppp.sim.Player {
 		else {
 		    // if already playing music, keep playing unless lost all rats
 		    if (this.pipers.get(p).playedMusic == true) {
-			double thresh = 0;
-			if (this.pipers.get(p).strategy.type == StrategyType.diffusion) {
-			    thresh = numCapturedRats;
-			}
-			else {
-			    thresh = numCloseRats;
-			}
-			if (numCapturedRats > thresh) {
+			if (numCapturedRats > 0) {
 			    playMusic = true;
 			}
 			else {
@@ -555,7 +555,7 @@ public class Player implements pppp.sim.Player {
 			    }
 			}
 			else {
-			    if (numCloseRats > expNumRats) {
+			    if (numCapturedRats > expNumRats) {
 				playMusic = true;
 			    }
 			    else {
