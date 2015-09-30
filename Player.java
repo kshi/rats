@@ -36,12 +36,11 @@ public class Player implements pppp.sim.Player {
     private final double baseRatAttractor = 40;
     private int totalRats;
     private double ratAttractor = baseRatAttractor;
-    private final double returnRatAttractor = 5;
+    //    private final double returnRatAttractor = 5;
     private final double collabCoef = 1.7;
-    private final double friendlyCompCoef = 0.5;
+    private final double friendlyCompCoef = 0.95;
     private final double enemyCompCoef = 1;
-    private final double friendlyInDanger = 30;
-    private final double D = 0.45;
+    private final double D = 0.4;
     private final double playThreshold = 3;
     private final double closeToGate = 25;
     private final double homeThreshold = 4000;
@@ -121,7 +120,7 @@ public class Player implements pppp.sim.Player {
 	double[][] newSweepField = new double[N][N];
 
 	//set wall to 0
-	for (int x= (int)(side/2*(1-alphaX)*step + 10*alphaX*step); x<(int)(side/2*(1-alphaX)*step + (N-10)*alphaX*step); x++) {
+	/*for (int x= (int)(side/2*(1-alphaX)*step + 10*alphaX*step); x<(int)(side/2*(1-alphaX)*step + (N-10)*alphaX*step); x++) {
 	    for (int y= (int)(side/2*(1-alphaX)*step + 10*alphaX*step); y<(int)(side/2*(1-alphaX)*step + (N-10)*alphaX*step); y++) {
 		if (x != (int) gateX*step && y!= (int)gateY*step) {
 		    rewardField[x][y] = 0;
@@ -129,13 +128,13 @@ public class Player implements pppp.sim.Player {
 		    sweepField[x][y] = 0;
 		}
 	    }
-	}
+	    }*/
 	
 	for (int x=1; x<N-1; x++) {
 	    for (int y=1; y<N-1; y++) {
-		    newRewardField[x][y] = rewardField[x][y] + D * (rewardField[x-1][y] + rewardField[x][y-1] + rewardField[x+1][y] + rewardField[x][y+1]);
-		    newReturnField[x][y] = returnField[x][y] + D * (returnField[x-1][y] + returnField[x][y-1] + returnField[x+1][y] + returnField[x][y+1]);		    
-		    newSweepField[x][y] = sweepField[x][y] + D * (sweepField[x-1][y] + sweepField[x][y-1] + sweepField[x+1][y] + sweepField[x][y+1]);		    
+		newRewardField[x][y] = rewardField[x][y] + D * (rewardField[x-1][y] + rewardField[x][y-1] + rewardField[x+1][y] + rewardField[x][y+1]);
+		newReturnField[x][y] = returnField[x][y] + D * (returnField[x-1][y] + returnField[x][y-1] + returnField[x+1][y] + returnField[x][y+1]);		    
+		newSweepField[x][y] = sweepField[x][y] + D * (sweepField[x-1][y] + sweepField[x][y-1] + sweepField[x+1][y] + sweepField[x][y+1]);		    
 	    }
 	}
 	//	for (int t=0; t<4; t++) {
@@ -174,8 +173,6 @@ public class Player implements pppp.sim.Player {
     public void init(int id, int side, long turns,
 		     Point[][] pipers, Point[] rats)
     {
-	this.step /= ((double) side / 100);
-	this.convergenceThreshold *= step;
         this.neg_y = id == 2 || id == 3;
         this.swap  = id == 1 || id == 3;
 	this.id = id;
@@ -249,7 +246,7 @@ public class Player implements pppp.sim.Player {
     private void createPipers(Point[][] pipers, Point[] rats) {
         for(int i = 0; i < pipers[this.id].length; i++) {
             Strategy strategy;
-            if(rats.length > 25 && pipers[this.id].length >3) {
+            if(rats.length > 10 || pipers[this.id].length >3) {
                 strategy = new Strategy(StrategyType.sweep);
             } else if (numberOfRatClusters(rats) > 4){
                 strategy = new Strategy(StrategyType.diffusion);
@@ -304,37 +301,21 @@ public class Player implements pppp.sim.Player {
 	    //            this.pipers.get(p).resetRats();
 	    this.pipers.get(p).updateLocation(pipers[id][p]);
         }
-	for (int t=0; t<4; t++) {
-	    for (int p=0; p<pipers[t].length; p++) {
-		int gridX = (int) (( pipers[t][p].x + side/2 + 10) * step);
-		int gridY = (int) (( pipers[t][p].y + side/2 + 10) * step);
-		int maxEnemyStrength = 0;
-		int friendlyStrength = getMusicStrength(pipers[id][p], pipers[id], 12);
-		for (int tt=0; tt<4; tt++) {
-		    if (tt != id) {
-			int tStrength = getMusicStrength(pipers[t][p], pipers[tt], 20);
-			if (tStrength > maxEnemyStrength) { maxEnemyStrength = tStrength;}			    
-		    }
+	int t = id;
+	for (int p=0; p<pipers[t].length; p++) {
+	    int gridX = (int) (( pipers[t][p].x + side/2 + 10) * step);
+	    int gridY = (int) (( pipers[t][p].y + side/2 + 10) * step);
+	    int maxEnemyStrength = 0;
+	    int friendlyStrength = getMusicStrength(pipers[id][p], pipers[id], 12);
+	    for (int tt=0; tt<4; tt++) {
+		if (tt != id) {
+		    int tStrength = getMusicStrength(pipers[t][p], pipers[tt], 20);
+		    if (tStrength > maxEnemyStrength) { maxEnemyStrength = tStrength;}			    
 		}
-		this.pipers.get(p).friendlyStrength = friendlyStrength;
-		this.pipers.get(p).maxEnemyStrength = maxEnemyStrength;
 	    }
+	    this.pipers.get(p).friendlyStrength = friendlyStrength;
+	    this.pipers.get(p).maxEnemyStrength = maxEnemyStrength;
 	}
-	
-        /*for(int i =0; i < rats.length; i++) {
-            if(rats[i] == null) {
-                if(this.rats.containsKey(i)) {
-                    this.rats.remove(i);
-                }
-            } else {
-                if(!this.rats.containsKey(i)) {
-                    Rat rat = new Rat(i);
-                    this.rats.put(i, rat);
-                }
-                Rat rat = this.rats.get(i);
-                updateRat(rat, rats[i], pipers, pipers_played);
-            }
-	    }*/
     }
 
     /*private void updateRat(Rat rat, Point location, Point[][] pipers, boolean[][] pipers_played) {
@@ -465,6 +446,7 @@ public class Player implements pppp.sim.Player {
         }
 	    Point src = pipers[id][p];
 	    int numCapturedRats = nearbyRats(src, rats, 10);
+	    int numCloseRats = nearbyRats(src, rats, 5);
 
 	    boolean playMusic = false;
 	    Point target;
@@ -548,7 +530,14 @@ public class Player implements pppp.sim.Player {
 		else {
 		    // if already playing music, keep playing unless lost all rats
 		    if (this.pipers.get(p).playedMusic == true) {
-			if (numCapturedRats > 0) {
+			double thresh = 0;
+			if (this.pipers.get(p).strategy.type == StrategyType.diffusion) {
+			    thresh = numCapturedRats;
+			}
+			else {
+			    thresh = numCloseRats;
+			}
+			if (numCapturedRats > thresh) {
 			    playMusic = true;
 			}
 			else {
@@ -566,7 +555,7 @@ public class Player implements pppp.sim.Player {
 			    }
 			}
 			else {
-			    if (numCapturedRats > expNumRats) {
+			    if (numCloseRats > expNumRats) {
 				playMusic = true;
 			    }
 			    else {
@@ -622,7 +611,7 @@ public class Player implements pppp.sim.Player {
 		double steepestPotential = 0;
 		for (int i=Math.max(x-3,0); i<=Math.min(x+3,N-1); i++) {
 		    for (int j=Math.max(y-3,0); j<=Math.min(y+3,N-1); j++){
-			if ((i != x || j != y) && sweepField[i][j] > steepestPotential) {
+			if (sweepField[i][j] > steepestPotential) {
 			    //if (sweepField[i][j] > steepestPotential) {
 			    bestX = i;
 			    bestY = j;
