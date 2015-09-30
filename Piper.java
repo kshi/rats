@@ -58,7 +58,7 @@ public class Piper {
 
     public void updateLocation(Point point) {
 	if (this.prevLocation != null) {
-	    double memory = 16;
+	    double memory = 10;
 	    movementX = movementX * (memory - 1) / memory;
 	    movementY = movementY * (memory - 1) / memory;
 	    movementX += (point.x - this.prevLocation.x) / memory;

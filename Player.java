@@ -18,6 +18,7 @@ public class Player implements pppp.sim.Player {
     private Random gen = new Random();
     boolean neg_y;
     boolean swap;
+    private boolean has_left_gate = false;
 
     private int maxMusicStrength;
     private double[][] rewardField;
@@ -36,9 +37,9 @@ public class Player implements pppp.sim.Player {
     private int totalRats;
     private double ratAttractor = baseRatAttractor;
     private final double returnRatAttractor = 5;
-    private final double collabCoef = 4;
-    private final double friendlyCompCoef = 0.05;
-    private final double enemyCompCoef = 0.2;
+    private final double collabCoef = 1.7;
+    private final double friendlyCompCoef = 0.5;
+    private final double enemyCompCoef = 1;
     private final double friendlyInDanger = 30;
     private final double D = 0.4;
     private final double playThreshold = 3;
@@ -47,7 +48,7 @@ public class Player implements pppp.sim.Player {
     private double homeX;
     private double homeY;
     private final double enemyRepulsor = 0;
-    private double convergenceThreshold = 0.25;
+    private double convergenceThreshold = 0.2;
 
     // modified sweep strategy variables
     private int sweepNumPipersSide1;
@@ -110,7 +111,7 @@ public class Player implements pppp.sim.Player {
 	    }
 	}
 	//sweepField[(int) Math.round((alphaX * 3 * side / 10 + side/2 + 10) * step)][ (int) Math.round((alphaY * 3 * side / 10 + side/2 + 10) * step) ] = homeThreshold;
-	sweepField[(int) Math.round((behindGateX + side/2 + 10 + alphaX/step) * step)][ (int) Math.round((behindGateY + side/2 + 10 + alphaY/step) * step) ] = homeThreshold;	
+	sweepField[(int) Math.round((gateX + side/2 + 10 - alphaX*side/5) * step)][ (int) Math.round((gateY + side/2 + 10 - alphaY * side/5) * step) ] = homeThreshold;	
 	returnField[ (int) Math.round((gateX + side/2 + 10) * step)][ (int) Math.round((gateY + side/2 + 10) * step)] = homeThreshold;	
     }
 
@@ -150,9 +151,11 @@ public class Player implements pppp.sim.Player {
 		    }
 		}
 		if (t != id) {
-		    newRewardField[ gridX ][ gridY ] *= Math.pow(enemyCompCoef, maxEnemyStrength - friendlyStrength);
-		    newReturnField[ gridX ][ gridY ] *= Math.pow(enemyCompCoef, maxEnemyStrength - friendlyStrength);
-		    newSweepField[ gridX ][ gridY ] *= Math.pow(enemyCompCoef, maxEnemyStrength - friendlyStrength);
+		    if (maxEnemyStrength - friendlyStrength < pipers[id].length / 2) {
+			newRewardField[ gridX ][ gridY ] *= Math.pow(enemyCompCoef, maxEnemyStrength - friendlyStrength);
+			newReturnField[ gridX ][ gridY ] *= Math.pow(enemyCompCoef, maxEnemyStrength - friendlyStrength);
+			newSweepField[ gridX ][ gridY ] *= Math.pow(enemyCompCoef, maxEnemyStrength - friendlyStrength);
+		    }
 		}
 		else {
 		    if (distance(pipers[id][p], new Point(gateX, gateY)) > closeToGate) {
@@ -452,7 +455,7 @@ public class Player implements pppp.sim.Player {
 
 	    //piper is behind gate
 	    if (alphaX * pipers[id][p].x + alphaY * pipers[id][p].y > side/2) {
-		if (numCapturedRats > 0 && haveGateInfluence == false && distance(pipers[id][p], new Point(behindGateX, behindGateY)) < 2.2) {
+		if (numCapturedRats > 0 && haveGateInfluence == false && distance(pipers[id][p], new Point(behindGateX, behindGateY)) < 2.2 && has_left_gate) {
 		    target = new Point(behindGateX, behindGateY);
 		    playMusic = true;
 		    numFriendliesNearGate++;
@@ -464,9 +467,9 @@ public class Player implements pppp.sim.Player {
 		    playMusic = false;
 		}
 	    }
-
 	    //piper has captured enough rats
-	    else if(numCapturedRats >= 1 + rats.length / (8*pipers[id].length) && ((distance(src, new Point(gateX, gateY)) > closeToGate) || haveGateInfluence == false) ) {
+	    else if(numCapturedRats >= 1 + rats.length / (4*pipers[id].length*3) && ((distance(src, new Point(gateX, gateY)) > closeToGate) || haveGateInfluence == false) ) {
+		has_left_gate = true;		
 		if (distance(src, new Point(gateX, gateY)) > closeToGate) {
 		    if (piper.strategy.type == StrategyType.diffusion) {
 			int x = (int)Math.round((src.x + side/2 + 10)*step);
@@ -492,11 +495,12 @@ public class Player implements pppp.sim.Player {
 		else {
 		    target = new Point(behindGateX, behindGateY);
 		}
-		playMusic = true;		
+		playMusic = true;
 	    }
 
 	    //piper should capture more rats
 	    else {
+		has_left_gate = true;		
 		if (piper.strategy.type == StrategyType.diffusion) {
 		    int strength = Math.min(getMusicStrength(src, pipers[id],25),maxMusicStrength-1);
 		    int x = (int)Math.round((src.x + side/2 + 10)*step);
@@ -570,7 +574,7 @@ public class Player implements pppp.sim.Player {
         boolean playMusic = false;
         Point target = null;
         if (allPipersWithinDistance == null) {
-            allPipersWithinDistance = allPipersWithinDistance(10);
+            allPipersWithinDistance = allPipersWithinDistance(8);
         }
         if(piper.strategy.type != StrategyType.sweep || !piper.strategy.isPropertySet("step")) {
             piper.strategy = new Strategy(StrategyType.sweep);
@@ -592,7 +596,8 @@ public class Player implements pppp.sim.Player {
 		double steepestPotential = 0;
 		for (int i=Math.max(x-3,0); i<=Math.min(x+3,N-1); i++) {
 		    for (int j=Math.max(y-3,0); j<=Math.min(y+3,N-1); j++){
-			if (sweepField[i][j] > steepestPotential) {
+			if ((i != x || j != y) && sweepField[i][j] > steepestPotential) {
+			    //if (sweepField[i][j] > steepestPotential) {
 			    bestX = i;
 			    bestY = j;
 			    steepestPotential = sweepField[i][j];
