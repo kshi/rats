@@ -37,7 +37,7 @@ public class Player implements pppp.sim.Player {
     private int totalRats;
     private double ratAttractor = baseRatAttractor;
     //    private final double returnRatAttractor = 5;
-    private final double collabCoef = 1.7;
+    private double collabCoef = 1.7;
     private final double friendlyCompCoef = 0.95;
     private final double enemyCompCoef = 1;
     private final double D = 0.4;
@@ -173,6 +173,7 @@ public class Player implements pppp.sim.Player {
     public void init(int id, int side, long turns,
 		     Point[][] pipers, Point[] rats)
     {
+	this.collabCoef *= side / 100;
         this.neg_y = id == 2 || id == 3;
         this.swap  = id == 1 || id == 3;
 	this.id = id;
@@ -428,7 +429,7 @@ public class Player implements pppp.sim.Player {
 	boolean haveGateInfluence = false;
 	ratAttractor = baseRatAttractor * Math.exp((double) totalRats / (double) rats.length);
 	updateBoard(pipers, rats, pipers_played);	    	
-	for (int iter=1; iter<3*N/4; iter++) {
+	for (int iter=1; iter<N; iter++) {
 	    diffuse(pipers);
 	}
         Boolean allPipersWithinDistance = null;
@@ -554,7 +555,7 @@ public class Player implements pppp.sim.Player {
 				playMusic = false;
 			    }
 			}
-			else {
+			else { //greedy
 			    if (numCapturedRats > expNumRats) {
 				playMusic = true;
 			    }
