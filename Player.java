@@ -4,6 +4,7 @@ import pppp.sim.Point;
 import pppp.sim.Move;
 
 import java.util.*;
+import java.io.*;
 
 public class Player implements pppp.sim.Player {
 
@@ -401,7 +402,10 @@ public class Player implements pppp.sim.Player {
     public void play(Point[][] pipers, boolean[][] pipers_played,
 		     Point[] rats, Move[] moves)
     {
-	double expNumRats = rats.length * 100 * 3.14 / (2*side*side);
+	double expNumRats = 0;
+	if (pipers[id].length == 1) {
+	    expNumRats = rats.length * 100 * 3.14 / (2*side*side);
+	}
 	if (this.pipers.get(0).strategy.type != StrategyType.sweep) {
 	    updateStrategy(pipers,rats);
 	}
@@ -819,5 +823,21 @@ public class Player implements pppp.sim.Player {
     public double distance(Point p1, Point p2)
     {
         return Math.hypot(p1.x - p2.x, p1.y - p2.y);
+    }
+
+    public void writeArray(double[][] board, String filename) {
+	try {
+	    FileWriter writer = new FileWriter(filename);
+	    for (int x=0; x<board.length; x++) {
+		for (int y=0; y<board.length; y++) {
+		    writer.append(Double.toString(board[x][y]));
+		    if (y < board[x].length-1) { writer.append(',');}
+		}
+		if (x < board.length-1){ writer.append('\n');}
+	    }	    
+	}
+	catch(IOException e) {
+	    System.exit(0);
+	}
     }
 }
